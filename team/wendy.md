@@ -1,1 +1,5 @@
-Hello, my name is Wendy.
+Hello, my name is Wendy Contreras.
+
+Some ideas I have for our project GauchoGuider, a chatbot trained on UCSB course data, is to gather information about UCSB courses, including descriptions, syllabuses, student opinions, and professor-specific insights. Since a course’s style and layout often depend on the professor, I want to organize the data by professor as well. I’m thinking we can pull data from sources like Reddit, RateMyProfessors, course syllabuses, and course evaluations if available.
+
+Once we collect this data, the chatbot could answer questions like: “What’s the workload like for this class?” or “Which professor is recommended for this course?” I also think it could suggest courses based on student interests and past experiences, making it easier for students to plan their schedules. Overall, the goal is to create a tool that helps UCSB students navigate course options and make informed decisions, while learning from previous students’ experiences.
