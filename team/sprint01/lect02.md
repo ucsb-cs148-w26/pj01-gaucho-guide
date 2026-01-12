@@ -1,32 +1,70 @@
-Project: Gaucho Guider
+# Daily Scrum Meeting Notes
 
-Mentor: Self mentored
+## Project
+**Gaucho Guider**
 
-Meeting time: Week 2 lect 1, Monday 11-12:15
+## Mentor
+Self-mentored
 
-Type of meeting: daily scrum
+## Meeting Information
+- **Meeting Time:** Week 2 Lecture 1, Monday 11:00–12:15  
+- **Type of Meeting:** Daily Scrum
 
-Team: Nick Kamenica [X], Tej Tripathy [X], Anjali Dev [X], Wendy Contreras Martinez [X], Ria Singh [X], Krystelle Baluyot [X] Samuel[]
+## Team Attendance
+- Nick Kamenica [X]  
+- Tej Tripathy [X]  
+- Anjali Dev [X]  
+- Wendy Contreras Martinez [X]  
+- Ria Singh [X]  
+- Krystelle Baluyot [X]  
+- Samuel [ ]
 
-Scribed discussion:
+---
 
-Nick: Created the scrum01 folder and is the scribe for today's s
-crum
+## Daily Scrum Questions
+1. What did I finish since yesterday?  
+2. What will I work on next?  
+3. What is blocking me?
 
-Tej: Created and started the README
+---
 
-Wendy: Fixing the formatting of readme
+### Nick Kamenica
+- **Finished:** Created the `scrum01` folder and served as the scribe for today’s scrum.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
-Ria: Started the document and led discussion on the Agreements.md
+### Tej Tripathy
+- **Finished:** Created and started the README.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
-Krystelle: Scrummaster, led our discussion in a positive manner
+### Wendy Contreras Martinez
+- **Finished:** Fixed and improved the formatting of the README.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
-Anjali: Created the user journey document
+### Ria Singh
+- **Finished:** Started the documentation and led the discussion on `Agreements.md`.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
-Samuel: absent
+### Krystelle Baluyot
+- **Finished:** Served as Scrum Master and led the discussion in a positive and organized way.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
+### Anjali Dev
+- **Finished:** Created the user journey document.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** None.
 
-Next tasks, finish the lab01 work (hello world program) by the 16th, no roadblocks 
+### Samuel
+- **Finished:** Absent.
+- **Next:** Completing and discussing the user journey and problem scenarios, and working on Lab 01 (solo) and Lab 01-T.
+- **Blockers:** Unknown due to absence.
 
+---
 
-
+## Next Tasks
+- Finish Lab 01 work (Hello World program) by **January 16**.
+- **Roadblocks:** None reported.
