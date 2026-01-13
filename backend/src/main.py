@@ -1,0 +1,166 @@
+import os
+
+import click
+from dotenv import load_dotenv
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
+from langchain_ollama import ChatOllama
+
+from backend.src.managers.session_manager import SessionManager
+from backend.src.managers.vector_manager import VectorManager
+from backend.src.scrapers.rmp_scraper import get_school_reviews
+
+load_dotenv()
+PINECONE_INDEX_NAME = "ucsb-gaucho-index"
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+MODEL_NAME = "llama3.1"
+UCSB_SCHOOL_ID = "U2Nob29sLTEwNzc="
+
+
+def select_session(session_manager: SessionManager):
+    sessions = session_manager.get_recent_sessions(limit=5)
+    if not sessions:
+        return session_manager.create_session(name="New Session")
+
+    click.secho("\n--- Recent Sessions ---", fg="yellow")
+    for idx, (sid, name, time) in enumerate(sessions):
+        short_time = str(time).split('.')[0]
+        click.secho(f"{idx + 1}. {name} ({short_time})", fg="cyan")
+    click.secho("N. Start New Chat", fg="green")
+
+    choice = click.prompt("Select a session", default="N")
+    if choice.upper() == 'N':
+        return session_manager.create_session(name="New Session")
+
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(sessions):
+            click.secho(f"Resuming '{sessions[idx][1]}'...", dim=True)
+            return sessions[idx][0]
+        else:
+            return session_manager.create_session()
+    except ValueError:
+        return session_manager.create_session()
+
+
+def print_logo():
+    logo = r"""
+      _____              __        _____     _    __       
+     / ___/__ ___ ______/ /  ___  / ___/_ __(_)__/ /__ ____
+    / (_ / _ `/ // / __/ _ \/ _ \/ (_ / // / / _  / -_) __/
+    \___/\_,_/\_,_/\__/_//_/\___/\___/\_,_/_/\_,_/\__/_/   
+    
+    
+    ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡤⠖⠒⠒⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡴⠋⠁⠀⠀⠉⠉⠒⠂⠤⠤⠤⠴⠚⠁⠐⠒⢲⡀⠀⠙⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠃⠀⠀⠀⠀⣶⣊⣉⡉⠉⠉⠉⠉⠙⠒⠒⠒⠋⠀⠀⠀⠘⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡸⠀⠀⠀⠀⠀⠈⠀⠀⠉⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⢀⡴⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁⣀⣀⡤⠤⠒⠒⠊⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢳⣤⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⢀⣠⠴⣒⡚⠿⠿⠿⠶⣿⣒⠤⢤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⡏⠙⠛⠫⢽⣶⢤⡀⠀⠀⠀⠀
+⠀⡰⠋⡰⠊⠁⠀⠀⠀⠀⠀⠀⠀⠉⠑⠺⠭⣲⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⣇⠀⠀⠀⠀⠈⠳⣍⢷⡀⠀⠀
+⢰⠁⠰⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠺⢗⣦⣄⣀⣀⣀⡀⠀⠀⣀⣀⣀⣀⣤⣶⣿⣷⡫⢿⠀⠀⠀⠀⠀⠀⠈⠳⡿⣆⠀
+⢀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠪⣝⢿⣢⠭⡿⣿⣟⡺⣛⣷⡯⠴⠛⣉⣠⣼⣇⡀⠀⠀⠀⠀⠀⠀⠹⡘⡄
+⠸⣄⠀⠀⠀⠀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⣿⣯⣍⣩⢭⣥⢤⣶⣶⣶⡯⠽⠛⠉⠀⠈⠉⠒⠦⣀⠀⠀⠀⡇⢡
+⠀⠈⠳⠤⣠⣎⠁⠀⠀⠀⠈⠉⠑⠲⢤⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠱⢿⣮⡉⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⡇⠸
+⠀⠀⠀⠀⠀⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠒⠢⠤⣀⡀⠀⠀⠀⠀⠀⠙⢮⣳⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡼⢣⠇
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠒⠒⠤⢄⣀⡀⠈⠻⣿⣦⣀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡤⢴⣫⠴⠃⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠑⠒⠿⣿⠯⣍⣀⣈⣉⡉⠭⠵⠒⢋⠉⠀⠀⠀⠀
+                                                       
+    """
+    click.secho(logo, fg="yellow", bold=True)
+
+
+@click.command()
+def start():
+    """GauchoGuider: Your UCSB Companion."""
+
+    print_logo()
+
+    if PINECONE_API_KEY == "YOUR_PINECONE_KEY_HERE":
+        click.secho("ERROR: Please set your PINECONE_API_KEY in the script.", fg="red")
+        return
+
+    try:
+        llm = ChatOllama(model=MODEL_NAME, temperature=0.7)
+        vector_manager = VectorManager(PINECONE_API_KEY)
+        session_manager = SessionManager()
+    except Exception as e:
+        click.secho(f"Initialization Error: {e}", fg="red")
+        return
+
+    current_session_id = select_session(session_manager)
+
+    history = session_manager.load_history(current_session_id)
+
+    if history:
+        click.secho(f"\n[Restored {len(history)} messages from history]\n", dim=True)
+        if isinstance(history[-1], AIMessage):
+            click.secho(f"[Last Reply]: {history[-1].content}", fg="cyan")
+
+    system_prompt = SystemMessage(content="""
+    You are an enthusiastic, friendly student at UC Santa Barbara (UCSB) calling yourself "Gaucho AI". 
+    You love the beach, the campus vibe, and helping other students.
+
+    RULES:
+    1. STRICTLY talk about UCSB, Isla Vista, or college life at Santa Barbara. 
+    2. If the user asks about unrelated topics (like generic coding, world news, or other universities), 
+    politely steer them back to UCSB or say you only know about UCSB.
+    3. Use the provided Context (reviews and stats) to answer questions accurately. 
+    4. Be casual, use slang like "IV" (Isla Vista), "The Loop", "Arroyo", etc., if appropriate.
+    5. Always be positive but honest about the reviews you see.
+    """)
+
+    click.secho(
+        "\n[GauchoGuider]: Type '/scrape' to update my knowledge base or just ask a question!",
+        fg="cyan")
+
+    while True:
+        try:
+            user_input = click.prompt(click.style("\n> You", fg="white", bold=True))
+
+            # --- Commands ---
+            if user_input.lower() in ['exit', 'quit', 'q']:
+                click.secho("[GauchoGuider]: Go Gauchos! See ya later!", fg="cyan")
+                break
+
+            if user_input.lower() == '/scrape':
+                click.secho("Accessing RMP Mainframe...", fg="yellow")
+                docs = get_school_reviews(UCSB_SCHOOL_ID)
+                if docs:
+                    vector_manager.ingest_data(docs)
+                else:
+                    click.secho("No reviews found or error occurred.", fg="red")
+                continue
+
+            # --- RAG Logic ---
+            click.secho("  (Thinking...)", fg="black", bold=True)  # visual feedback
+            docs = vector_manager.search(user_input, k=4)
+            context_text = "\n\n".join([d.page_content for d in docs])
+
+            rag_prompt = f"""
+            CONTEXT FROM RMP REVIEWS:
+            {context_text}
+
+            USER QUESTION:
+            {user_input}
+            """
+
+            messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
+            response = llm.invoke(messages)
+            response_content = response.content
+
+            click.secho(f"[GauchoGuider]: {response_content}", fg="cyan")
+
+            session_manager.save_message(current_session_id, "human", user_input)
+            session_manager.save_message(current_session_id, "ai", response_content)
+
+            history = session_manager.load_history(current_session_id)
+
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            click.secho(f"Error: {e}", fg="red")
+
+
+if __name__ == "__main__":
+    start()
