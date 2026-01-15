@@ -1,4 +1,5 @@
 import os
+import concurrent.futures
 
 import click
 from dotenv import load_dotenv
@@ -7,13 +8,13 @@ from langchain_ollama import ChatOllama
 
 from backend.src.managers.session_manager import SessionManager
 from backend.src.managers.vector_manager import VectorManager
-from backend.src.scrapers.rmp_scraper import get_school_reviews
+from backend.src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
 
 load_dotenv()
-PINECONE_INDEX_NAME = "ucsb-gaucho-index"
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-MODEL_NAME = "llama3.1"
-UCSB_SCHOOL_ID = "U2Nob29sLTEwNzc="
+MODEL_NAME = os.getenv("MODEL_NAME")
+UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
 
 
 def select_session(session_manager: SessionManager):
@@ -76,10 +77,6 @@ def start():
 
     print_logo()
 
-    if PINECONE_API_KEY == "YOUR_PINECONE_KEY_HERE":
-        click.secho("ERROR: Please set your PINECONE_API_KEY in the script.", fg="red")
-        return
-
     try:
         llm = ChatOllama(model=MODEL_NAME, temperature=0.7)
         vector_manager = VectorManager(PINECONE_API_KEY)
@@ -105,9 +102,10 @@ def start():
     1. STRICTLY talk about UCSB, Isla Vista, or college life at Santa Barbara. 
     2. If the user asks about unrelated topics (like generic coding, world news, or other universities), 
     politely steer them back to UCSB or say you only know about UCSB.
-    3. Use the provided Context (reviews and stats) to answer questions accurately. 
-    4. Be casual, use slang like "IV" (Isla Vista), "The Loop", "Arroyo", etc., if appropriate.
-    5. Always be positive but honest about the reviews you see.
+    3. Use the provided Context (reviews and stats) to answer questions accurately.
+    4. When mentioning names, always use the provided Context and the Context only. DO NOT ADD EXTRA INFORMATION.
+    5. Be casual, use slang like "IV" (Isla Vista), "The Loop", "Arroyo", etc., if appropriate.
+    6. Always be positive but honest about the reviews you see.
     """)
 
     click.secho(
@@ -125,15 +123,28 @@ def start():
 
             if user_input.lower() == '/scrape':
                 click.secho("Accessing RMP Mainframe...", fg="yellow")
-                docs = get_school_reviews(UCSB_SCHOOL_ID)
-                if docs:
-                    vector_manager.ingest_data(docs)
-                else:
-                    click.secho("No reviews found or error occurred.", fg="red")
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future_reviews = executor.submit(get_school_reviews, UCSB_SCHOOL_ID)
+                    future_profs = executor.submit(get_school_professors, UCSB_SCHOOL_ID)
+                    try:
+                        school_reviews = future_reviews.result()
+                    except Exception as e:
+                        click.secho(f"Error fetching reviews: {e}", fg="red")
+                        school_reviews = None
+
+                    try:
+                        professors = future_profs.result()
+                    except Exception as e:
+                        click.secho(f"Error fetching professors: {e}", fg="red")
+                        professors = None
+                if school_reviews:
+                    vector_manager.ingest_data(school_reviews, "school_reviews")
+                if professors:
+                    vector_manager.ingest_data(professors, "professor_data")
                 continue
 
             # --- RAG Logic ---
-            click.secho("  (Thinking...)", fg="black", bold=True)  # visual feedback
+            click.secho("(Thinking...)", fg="black", bold=True)  # visual feedback
             docs = vector_manager.search(user_input, k=4)
             context_text = "\n\n".join([d.page_content for d in docs])
 
@@ -145,6 +156,7 @@ def start():
             {user_input}
             """
 
+            # click.secho(context_text, fg="yellow", bold=True)
             messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
             response = llm.invoke(messages)
             response_content = response.content

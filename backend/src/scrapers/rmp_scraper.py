@@ -118,7 +118,7 @@ def get_school_reviews(school_ql_id: str) -> list:
     cursor = ""
     has_next_page = True
 
-    print(f"Starting scrape for School ID: {school_ql_id}")
+    print(f"Starting review scrape for School ID: {school_ql_id}")
 
     while has_next_page:
         variables = {
@@ -167,7 +167,7 @@ def get_school_reviews(school_ql_id: str) -> list:
     return all_reviews
 
 
-def school_ratings(school_id: str) -> Any:
+def get_school_ratings(school_id: str) -> Any:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -199,43 +199,144 @@ def school_ratings(school_id: str) -> Any:
     return None
 
 
-def csv_prep(school_overall_rating: Any, school_amenities_rating: Any, user_reviews: list) -> list:
-    return [{
-        'Overall Rating': school_overall_rating,
-        'Amenities': school_amenities_rating,
-        'Reviews': user_reviews
-    }]
+def get_school_professors(school_ql_id: str) -> list:
+    url = "https://www.ratemyprofessors.com/graphql"
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Authorization": "Basic dGVzdDp0ZXN0",
+        "Content-Type": "application/json"
+    }
 
-# def scrape_rmp(professor_names):
-#     school_overall_rating, school_amenities_rating = school_ratings("1077")
-#     user_reviews = get_school_reviews("U2Nob29sLTEwNzc=")
-#     data = []
-#     print(f"School Overall Rating: {school_overall_rating}/5")
-#     print("-" * 30)
-#     for amenity in school_amenities_rating:
-#         print(f"{amenity[0]}: {amenity[1]}\n")
-#     print("-" * 30)
-#     print(f"Found {len(user_reviews)} reviews:")
-#     for r in user_reviews[:3]:
-#         print(r)
-#     print("-" * 30)
-#
-#     for name in professor_names:
-#         print(f"Looking up {name} on RMP...")
-#         prof = ratemyprofessor.get_professor_by_school_and_name(school, name)
-#
-#         if prof is not None:
-#             data.append({
-#                 'source': 'RateMyProfessor',
-#                 'professor': prof.name,
-#                 'department': prof.department,
-#                 'rating': prof.rating,
-#                 'difficulty': prof.difficulty,
-#                 'num_ratings': prof.num_ratings,
-#                 'link': f"https://www.ratemyprofessors.com/professor/{prof.id}"
-#             })
-#         else:
-#             print(f"Professor {name} not found.")
-#
-#     return data
+    query = """
+    query TeacherSearchPaginationQuery(
+      $count: Int!
+      $cursor: String
+      $query: TeacherSearchQuery!
+    ) {
+      search: newSearch {
+        ...TeacherSearchPagination_search_1jWD3d
+      }
+    }
+    
+    fragment CardFeedback_teacher on Teacher {
+      wouldTakeAgainPercent
+      avgDifficulty
+    }
+    
+    fragment CardName_teacher on Teacher {
+      firstName
+      lastName
+    }
+    
+    fragment CardSchool_teacher on Teacher {
+      department
+      school {
+        name
+        id
+      }
+    }
+    
+    fragment TeacherBookmark_teacher on Teacher {
+      id
+      isSaved
+    }
+    
+    fragment TeacherCard_teacher on Teacher {
+      id
+      legacyId
+      avgRating
+      numRatings
+      ...CardFeedback_teacher
+      ...CardSchool_teacher
+      ...CardName_teacher
+      ...TeacherBookmark_teacher
+    }
+    
+    fragment TeacherSearchPagination_search_1jWD3d on newSearch {
+      teachers(query: $query, first: $count, after: $cursor) {
+        didFallback
+        edges {
+          cursor
+          node {
+            ...TeacherCard_teacher
+            id
+            __typename
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        resultCount
+        filters {
+          field
+          options {
+            value
+            id
+          }
+        }
+      }
+    }
+    """
+
+    all_professors = []
+    cursor = ""
+    has_next_page = True
+
+    print(f"Starting professor scrape for School ID: {school_ql_id}")
+
+    while has_next_page:
+        variables = {
+            "count": 50,
+            "cursor": cursor if cursor else "",
+            "query": {
+                "text": "",
+                "schoolID": school_ql_id
+            }
+        }
+
+        response = requests.post(url, json={"query": query, "variables": variables}, headers=headers)
+
+        if response.status_code != 200:
+            print(f"Request failed with status {response.status_code}")
+            break
+
+        data = response.json()
+
+        try:
+            school_node = data["data"]["search"]
+            professor_data = school_node["teachers"]
+            edges = professor_data["edges"]
+            page_info = professor_data["pageInfo"]
+        except (KeyError, TypeError) as e:
+            print("Error parsing response structure:", e)
+            print(json.dumps(data, indent=2))
+            break
+
+        for edge in edges:
+            node = edge["node"]
+            review_text = (f"Name: {node.get('firstName')} {node.get('lastName')}\n"
+                           f"Rating: {node.get('avgRating')}\nDifficulty: {node.get('avgDifficulty')}\nWould_take_again"
+                           f"_percentage: {node.get('wouldTakeAgainPercent')}\nDepartment: {node.get('department')}")
+            doc = Document(
+                page_content=review_text,
+                metadata={
+                    "name": f"{node.get('firstName')} {node.get('lastName')}",
+                    "rating": node.get('avgRating'),
+                    "difficulty": node.get('avgDifficulty'),
+                    "would_take_again_percentage": node.get('wouldTakeAgainPercent'),
+                    "department": node.get('department'),
+                    "source": "ratemyprofessors",
+                }
+            )
+            all_professors.append(doc)
+
+        print(f"Fetched {len(edges)} professors. Total: {len(all_professors)}")
+
+        has_next_page = page_info["hasNextPage"]
+        cursor = page_info["endCursor"]
+
+        time.sleep(0.5)
+
+    return all_professors
