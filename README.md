@@ -18,7 +18,7 @@ The goal of this project is to simplify course planning by putting useful course
 
 ---
 
-# Audience
+# Audience and User Roles
 
 ## Ideal Users
 
@@ -61,3 +61,7 @@ Gaucho Guider handles the heavy lifting by collecting and organizing course-rela
 ## Why These Technologies
 
 We used FastAPI in order to create the API for all of our calls. OpenAI will be used for the backbone of our course assistant. Pinecone to help achieve RAG implementation. Python and React for the frontend and backend, and for any scripts.
+
+# Role and Permissions
+
+Gaucho Guider will be available on the public internet, so we plan to restrict access to UCSB students using OAuth-based authentication (for example, requiring an @ucsb.edu login) to reduce the risk of spam or inappropriate use. All authenticated users share the same role and permissions: they can ask the chatbot questions and use the browser extension to get course-planning help, with no separate administrator or moderator features. Users’ goals are to understand courses more clearly, compare class options, and plan schedules with
