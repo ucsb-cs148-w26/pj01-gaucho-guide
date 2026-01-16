@@ -154,7 +154,7 @@ def start():
             {user_input}
             """
 
-            click.secho(context_text, fg="yellow", bold=True)
+            # click.secho(context_text, fg="yellow", bold=True)
             messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
             response = llm.invoke(messages)
             response_content = response.content
