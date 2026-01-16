@@ -10,36 +10,38 @@
 
 ## Team Agreements
 
-We agree to follow these practices to create a productive, respectful, and supportive team environment throughout this project.
+These agreements guide how we make decisions as a team, especially around priorities, deadlines, and tradeoffs, using an Agile mindset.
 
-### Communication & Availability
-- If one of us cannot attend a meeting for an unavoidable reason, we will notify the team on the EdStem channel as early as possible.
-- We will try to keep absences to a minimum.
-- Team members who attend meetings will help catch up anyone who missed by sharing notes, decisions, or updates.
+### Commitment to the Team
+- We agree to stay engaged and support each other throughout the project.
+- If someone must miss a meeting for an unavoidable reason, they will notify the team on EdStem as early as possible.
+- Team members who attend meetings will help share updates with anyone who was absent.
 
-### Collaboration & Contribution
-- We will all make a genuine effort to contribute to the team’s success.
-- We will complete our assigned tasks on time or communicate early if something is blocking us.
-- We will respect each other’s time by coming prepared to meetings and staying engaged.
+### Sprint-Based Planning
+- We will plan work in short sprints with clear goals.
+- Each sprint will focus on completing a small set of well-defined features.
+- Sprint goals should be realistic and achievable within the given time.
 
-### Team Culture
-- We aim to keep a supportive, respectful, and low-stress atmosphere.
-- Questions are encouraged, and no one should feel bad for asking for help or clarification.
-- We will listen to each other’s ideas and give feedback in a respectful way.
+### Quality vs. Scope Decisions
+- Our priority is to deliver features that work well and are easy to understand.
+- As sprint deadlines approach, we will evaluate progress honestly.
+- If time is running out, we agree to reduce scope rather than rush unfinished features.
+- Lower-priority or stretch features may be paused or dropped to protect quality.
+- Choosing to stop work on a feature near a deadline is a valid and responsible decision.
 
-### Handling Challenges & Differences
-- When disagreements or issues come up, we will address them calmly and directly.
-- We will focus on solving the problem rather than blaming individuals.
-- If needed, we will talk things through as a group and work toward a solution everyone can agree on.
+### Adapting During the Sprint
+- If a task turns out to be larger or harder than expected, we will communicate early.
+- We will adjust sprint goals together rather than letting issues pile up.
+- Changes to priorities should be discussed as a team.
 
-### Planning & Work Style
-- We will have a shared understanding of what we are working on and what our priorities are.
-- Our process can change as we learn what works better for the team.
-- We will regularly check in to make sure everyone feels supported and on track.
+### Shared Responsibility
+- We share ownership of the project, not just individual tasks.
+- We will help unblock each other when possible.
+- Major decisions that affect deadlines or scope should involve the whole team.
 
-### Shared Goals
-- Our goal is to build a useful, reliable project while learning how to work well as a team.
-- Success means clear communication, steady progress, and a project we are proud of.
-- We can count on each other to be honest, respectful, and committed.
+### Reflection and Improvement
+- At the end of each sprint, we will reflect on what went well and what did not.
+- We will use those reflections to improve how we plan and work in future sprints.
+- These agreements may evolve as the team learns what works best.
 
-These agreements may evolve as the project continues and as the team grows.
+Our shared goal is to build a high-quality, useful project while working together in a way that is respectful, flexible, and realistic.
