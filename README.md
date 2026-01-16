@@ -2,8 +2,19 @@
 
 ## Project Description
 
-Gaucho Guider is a chatbot and browser extension made for UCSB students.  
-It is trained on course-related data to help students plan, compare, and choose classes more easily.
+Gaucho Guider is a combination of a chatbot, a web application, and a browser extension that helps UCSB students make better decisions when planning their courses. The chatbot will allow students to input things like their major, unofficial transcript, and whether they are on professional tracks such as pre-med or pre-law. Using UCSB’s academic requirements, Gaucho Guider can then help students understand what requirements they have left and generate a possible schedule based on factors like:
+
+- how many units they want to take
+- the workload they are comfortable with
+- which courses best fit their academic path
+
+We also plan to create a browser extension that works directly with UCSB GOLD. When a student hovers over a course, the extension will show helpful details such as:
+
+- the general level of rigor of the course
+- Rate My Professor ratings for the instructor
+- access to past syllabi when available
+
+In addition, the main web application will serve as a central place for UCSB-related resources. This includes things like old syllabi organized by course and professor, along with other tools and information designed to help students feel more confident and less stressed when choosing their classes.
 
 The goal of this project is to simplify course planning by putting useful course information in one place and giving students clear, helpful answers.
 
