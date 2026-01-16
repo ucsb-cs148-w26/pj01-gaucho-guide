@@ -95,8 +95,7 @@ def start():
             click.secho(f"[Last Reply]: {history[-1].content}", fg="cyan")
 
     system_prompt = SystemMessage(content="""
-    You are an enthusiastic, friendly student at UC Santa Barbara (UCSB) calling yourself "Gaucho AI". 
-    You love the beach, the campus vibe, and helping other students.
+    You are GauchoGuider. A guide for ucsb students navigating through college life.
 
     RULES:
     1. STRICTLY talk about UCSB, Isla Vista, or college life at Santa Barbara. 
@@ -105,7 +104,6 @@ def start():
     3. Use the provided Context (reviews and stats) to answer questions accurately.
     4. When mentioning names, always use the provided Context and the Context only. DO NOT ADD EXTRA INFORMATION.
     5. Be casual, use slang like "IV" (Isla Vista), "The Loop", "Arroyo", etc., if appropriate.
-    6. Always be positive but honest about the reviews you see.
     """)
 
     click.secho(
@@ -156,7 +154,7 @@ def start():
             {user_input}
             """
 
-            # click.secho(context_text, fg="yellow", bold=True)
+            click.secho(context_text, fg="yellow", bold=True)
             messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
             response = llm.invoke(messages)
             response_content = response.content

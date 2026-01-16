@@ -316,13 +316,13 @@ def get_school_professors(school_ql_id: str) -> list:
 
         for edge in edges:
             node = edge["node"]
-            review_text = (f"Name: {node.get('firstName')} {node.get('lastName')}\n"
+            review_text = (f"Professor: {node.get('firstName')} {node.get('lastName')}\n"
                            f"Rating: {node.get('avgRating')}\nDifficulty: {node.get('avgDifficulty')}\nWould_take_again"
                            f"_percentage: {node.get('wouldTakeAgainPercent')}\nDepartment: {node.get('department')}")
             doc = Document(
                 page_content=review_text,
                 metadata={
-                    "name": f"{node.get('firstName')} {node.get('lastName')}",
+                    "Professor": f"{node.get('firstName')} {node.get('lastName')}",
                     "rating": node.get('avgRating'),
                     "difficulty": node.get('avgDifficulty'),
                     "would_take_again_percentage": node.get('wouldTakeAgainPercent'),
