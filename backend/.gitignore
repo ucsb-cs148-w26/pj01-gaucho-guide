@@ -1,0 +1,17 @@
+# Python compilation
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+
+# Editor settings
+.idea/
+
+# Environment variables
+.env
+
+# Data and Databases
+*.db
+*.csv
+*.json

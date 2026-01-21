@@ -24,7 +24,7 @@ SCHEMA_FILE = os.getenv("SCHEMA_FILE")
 class VectorManager:
     def __init__(self, api_key):
         self.pc = Pinecone(api_key=api_key)
-        self.embeddings = OllamaEmbeddings(model=MODEL_NAME)
+        self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
         self.llm = ChatOllama(model=MODEL_NAME)
 
         existing_indexes = [i.name for i in self.pc.list_indexes()]

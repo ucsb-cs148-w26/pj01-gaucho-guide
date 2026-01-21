@@ -78,7 +78,7 @@ def start():
     print_logo()
 
     try:
-        llm = ChatOllama(model=MODEL_NAME, temperature=0.7)
+        llm = ChatOllama(model=MODEL_NAME, temperature=0)  # Keep temperature low to avoid hallucinations
         vector_manager = VectorManager(PINECONE_API_KEY)
         session_manager = SessionManager()
     except Exception as e:
