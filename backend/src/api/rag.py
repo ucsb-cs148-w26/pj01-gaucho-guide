@@ -8,7 +8,7 @@ from backend.src.managers.vector_manager import VectorManager
 from backend.src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
 from backend.src.models.rag_response_dto import RagResponseDTO
 
-app = APIRouter(prefix="/rag", tags=["rag", "Internal"])
+router = APIRouter(prefix="/rag", tags=["rag", "Internal"])
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
@@ -17,7 +17,7 @@ MODEL_NAME = os.getenv("MODEL_NAME")
 UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
 
 
-@app.post("/update", response_model=RagResponseDTO)
+@router.post("/update", response_model=RagResponseDTO)
 def update_llm_knowledge():
     vector_manager = VectorManager(PINECONE_API_KEY)
     with concurrent.futures.ThreadPoolExecutor() as executor:
