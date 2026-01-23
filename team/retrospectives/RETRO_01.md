@@ -15,7 +15,7 @@
 ### Stop
 * Doing things without documenting them  
 * Doing things out of order
-
+* Not focusing on the big picture
 
 ### Continue
 * Communicating well as a group  
