@@ -18,7 +18,7 @@ def mock_db_connection():
 
 @pytest.fixture
 def mock_llm():
-    """Mocks ChatOllama in the correct location."""'
+    """Mocks ChatOllama in the correct location."""
     target_path = "backend.src.api.chat.ChatOllama"
 
     with patch(target_path) as MockOllama:
