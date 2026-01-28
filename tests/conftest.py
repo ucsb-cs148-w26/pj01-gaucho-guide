@@ -18,15 +18,12 @@ def mock_db_connection():
 
 @pytest.fixture
 def mock_llm():
-    """Mocks ChatOllama in the correct location."""
-    # FIX: Changed path from 'backend.src.routes.chat' to 'backend.src.chat'
-    # If your chat.py is in a different folder (e.g., routers), change to 'backend.src.routers.chat'
+    """Mocks ChatOllama in the correct location."""'
     target_path = "backend.src.api.chat.ChatOllama"
 
     with patch(target_path) as MockOllama:
         instance = MockOllama.return_value
 
-        # Async mock for 'await llm.ainvoke(...)'
         async def async_response(*args, **kwargs):
             return MagicMock(content="[MOCK] You should go to Freebirds!")
 
