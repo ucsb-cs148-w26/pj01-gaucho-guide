@@ -163,3 +163,21 @@ class VectorManager:
         except Exception as e:
             click.secho(f"Self-query failed, falling back to basic search: {e}", fg="red")
             return self.vector_store.similarity_search(query, k=k, namespace=namespace)
+
+    def std_search(self, query: str, k=5):
+        """
+        Performs standard similarity search within a routed namespace.
+        """
+        namespace = self.route_query(query)
+
+        try:
+            results = self.vector_store.similarity_search(
+                query=query,
+                k=k,
+                namespace=namespace
+            )
+            return results
+
+        except Exception as e:
+            click.secho(f"Search in namespace '{namespace}' failed: {e}", fg="red")
+            return self.vector_store.similarity_search(query, k=k)
