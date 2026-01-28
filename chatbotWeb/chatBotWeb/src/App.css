@@ -1,0 +1,91 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: #ffffff;
+}
+
+/* Page container */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background-color: #111dc7;
+  padding: 20px 40px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #ffcc00;
+  font-size: 28px;
+}
+
+/* Center section */
+.center-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Prompt text */
+.prompt {
+  font-size: 32px;
+  margin-bottom: 24px;
+}
+
+/* Input row */
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+}
+
+/* Buttons + input */
+.plus-btn,
+.submit-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  background-color: #ffcc00;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  border-radius: 50%;
+}
+
+/* Text input */
+.text-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: none;
+  background-color: #071ea1;
+  color: white;
+  font-size: 16px;
+}
+
+.text-input::placeholder {
+  color: #eaeaff;
+}
+
+/* Error message */
+.error {
+  margin-top: 10px;
+  color: red;
+  font-size: 14px;
+}
