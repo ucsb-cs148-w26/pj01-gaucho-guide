@@ -15,3 +15,5 @@ venv/
 *.db
 *.csv
 *.json
+.vercel
+.env*.local

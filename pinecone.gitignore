@@ -1,0 +1,23 @@
+# Pinecone API Key
+.env
+.env.local
+*.env
+
+# Local data / Vector embeddings
+data/
+index_data/
+pinecone_index/
+
+# Python specific
+__pycache__/
+*.py[cod]
+.venv/
+env/
+
+# Node.js specific
+node_modules/
+dist/
+
+# IDE files
+.vscode/
+.idea/

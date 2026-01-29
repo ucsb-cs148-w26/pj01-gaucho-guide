@@ -1,0 +1,210 @@
+:root {
+  /* Core UCSB Brand Colors */
+  --ucsb-navy: #003660;
+  --ucsb-blue: #094580;
+  --ucsb-gold: #febc11;
+  --ucsb-gold-hover: #ffcf40;
+  
+  /* Light Mode Defaults */
+  --bg-color: #f4f6f9;
+  --text-primary: #333333;
+  --header-bg: linear-gradient(135deg, var(--ucsb-navy) 0%, var(--ucsb-blue) 100%);
+  --input-container-bg: #ffffff;
+  --input-text-color: #333333;
+  --shadow-color: rgba(0, 54, 96, 0.15);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --bg-color: #0a1929; /* Deep dark navy */
+  --text-primary: #e0e0e0;
+  --header-bg: linear-gradient(135deg, #002a4d 0%, #001f3f 100%);
+  --input-container-bg: #1e293b;
+  --input-text-color: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Header --- */
+.header {
+  background: var(--header-bg);
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--ucsb-gold);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Toggle Switch */
+.theme-switch {
+  position: relative;
+  width: 60px;
+  height: 30px;
+  display: inline-block;
+}
+.theme-switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 34px;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px; width: 22px;
+  left: 4px; bottom: 4px;
+  background-color: var(--ucsb-gold);
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+input:checked + .slider { background-color: var(--ucsb-gold); }
+input:checked + .slider:before {
+  transform: translateX(30px);
+  background-color: var(--ucsb-navy);
+}
+
+/* --- Main Content --- */
+.center-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.prompt {
+  font-size: 38px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  background: linear-gradient(to right, var(--ucsb-navy), var(--ucsb-blue), var(--ucsb-gold), var(--ucsb-navy));
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+  text-align: center;
+}
+
+/* Dark mode prompt fix */
+[data-theme="dark"] .prompt {
+  background: linear-gradient(to right, #64b5f6, #febc11, #64b5f6);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes shine { to { background-position: 200% center; } }
+
+/* --- Input Bar --- */
+.input-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 750px;
+  background: var(--input-container-bg);
+  padding: 10px;
+  border-radius: 50px;
+  box-shadow: 0 10px 30px -5px var(--shadow-color);
+}
+
+.text-input {
+  flex: 1;
+  height: 48px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--input-text-color);
+  font-size: 18px;
+  outline: none;
+}
+
+.plus-btn, .submit-btn {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.plus-btn { background: transparent; color: #aaa; }
+.plus-btn:hover { background: rgba(0,0,0,0.05); color: var(--ucsb-blue); transform: rotate(90deg); }
+
+.submit-btn { background: var(--ucsb-navy); color: var(--ucsb-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.submit-btn:hover { transform: scale(1.1); background-color: var(--ucsb-blue); }
+
+/* --- Modal Overlay --- */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(5px);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s;
+}
+
+.modal-content {
+  background: var(--input-container-bg);
+  color: var(--text-primary);
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  border: 2px solid var(--ucsb-gold);
+  animation: slideUp 0.3s;
+}
+
+.modal-actions {
+  display: flex; gap: 15px; justify-content: center; margin-top: 25px;
+}
+
+.btn-primary {
+  background: var(--ucsb-navy); color: white; padding: 10px 24px;
+  border-radius: 8px; border: none; cursor: pointer; font-weight: bold;
+}
+.btn-secondary {
+  background: transparent; color: var(--text-primary); padding: 10px 24px;
+  border: 1px solid #ccc; border-radius: 8px; cursor: pointer;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.error { color: #d32f2f; margin-top: 15px; font-weight: 600; }
