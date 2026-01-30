@@ -50,5 +50,13 @@ The experiment is assigning each person at least 1-2 tasks per week on the Kanba
 **How it’s going**  
 This experiment is just starting, so results are still in progress. Early signs will be tracked through Kanban updates and team check-ins.
 
+*Update (Wednesday, January 28, 2026)* <br>
+Progress has been good so far. Issues were assigned on Monday, and team members have been making steady progress. Some people, including me (Wendy), have already finished a couple of sub-issues, which is a good sign.
+
 **Decision Going Forward**  
-Decision pending. We will review the results after a few weeks and decide whether to keep this change, adjust it, or try something new.
+Decision pending. We will make a final decision after a few weeks on whether to keep this change, adjust it, or try something new. In the meantime, we will continue to update the experiment weekly and reflect on how it went each week.
+
+*Update (Friday, January 30, 2026)* <br>
+All issues assigned for this week’s MVP were finished. The experiment has been working well, since clear task assignments made it easier for everyone to stay focused and accountable. Breaking work into smaller, well-defined tasks helped the team make steady progress throughout the week and avoid last-minute confusion. Everything is on track and ready for the MVP freeze.
+
+
