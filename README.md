@@ -80,3 +80,6 @@ Gaucho Guider will be available on the public internet, so we plan to restrict a
 # Project Paragraph
 
 Gaucho Guider is a chatbot and browser extension designed to help UCSB students plan their courses and long-term academic paths more effectively. The application will provide an interactive chatbot interface where students can ask questions about classes, prerequisites, and scheduling, supported by a frontend that makes this information easy to explore. In addition to conversational queries, Gaucho Guider will include tools such as a prerequisite planner and a multi-year schedule planner to help students map out their four-year academic plan. The platform will also integrate a “gold lens” view that aggregates useful insights like grade distributions, Rate My Professor data, and key course details, giving students a clearer, data-informed perspective when comparing classes and making enrollment decisions.
+
+# Deployment (Vercel)
+This project is deployed using Vercel. To deploy your own instance, fork or clone the repository, connect it to your Vercel account, and import the project. Configure the required environment variables in the Vercel dashboard, then deploy — Vercel will automatically build and host the application.
