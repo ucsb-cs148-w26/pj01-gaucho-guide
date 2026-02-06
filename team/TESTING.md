@@ -14,20 +14,12 @@ Tests are written to check expected responses and ensure that key components con
 ## Implemented Tests
 
 ### API Endpoint Tests
-Location: `tests/test_api.py` (or equivalent)
+Location: `tests file`
 
 These tests:
 - Send requests to backend endpoints
 - Verify status codes (e.g., 200 OK)
 - Confirm that responses contain expected fields and formats
-
-### RateMyProf Scraper Tests
-Location: `tests/test_rmp_scraper.py` (or equivalent)
-
-These tests:
-- Validate that the scraper runs successfully
-- Check that professor data is returned
-- Ensure the output structure matches the expected format
 
 ## How to Run Tests
 
