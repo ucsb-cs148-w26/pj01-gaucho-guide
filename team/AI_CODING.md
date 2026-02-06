@@ -18,3 +18,26 @@ The AI was helpful for quickly generating ideas and implementation details, espe
 ### Ensuring Correctness, Understanding, and Fair Use
 
 The output still needed to be checked carefully. I made sure the data-theme attribute matched the CSS selectors and variables defined in :root, otherwise the theme would not update correctly. I also verified that the SVG icons were imported or defined inline properly to avoid dependency issues. After generating the code, I tested the theme switching manually to make sure everything worked consistently across the page. The AI output worked as a starting point, but changes were still needed to make it fit our project correctly.
+
+
+
+## Ria Singh
+
+**AI Tool Used:** ChatGPT
+
+**Experiment Description:**  
+I used ChatGPT while developing and testing the Reddit scraper for GauchoGuider. The goal was to evaluate how well the scraper retrieved relevant posts from Reddit based on different keywords (e.g., housing, classes, professors). ChatGPT helped me generate commands to run the scraper locally, suggest test cases with different query parameters, and interpret the output to verify whether the scraped content was relevant and complete.
+
+**Outcomes Produced:**
+- Ran the scraper locally with multiple keyword variations
+- Exported and reviewed scraped results (CSV/JSON)
+- Identified which queries returned useful UCSB-related content
+- Confirmed that the scraper was collecting titles, text, and metadata correctly
+
+**Reflection on Usefulness:**  
+ChatGPT was helpful for quickly generating test scenarios and troubleshooting local execution issues. It reduced the time needed to figure out command formats and debugging steps. Going forward, this tool could be useful for testing data pipelines, writing small utilities, and validating scraping or preprocessing workflows.
+
+**Validation and Responsible Use:**  
+- I manually inspected the scraped data to ensure it was accurate and relevant.
+- I verified that the commands worked correctly in the local environment.
+- I cross-checked outputs against actual Reddit pages when results looked unusual.
