@@ -17,7 +17,7 @@ from backend.src.models.query_route import RouteQuery
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
-MODEL_NAME = os.getenv("MODEL_NAME")
+MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME")
 SCHEMA_FILE = os.getenv("SCHEMA_FILE")
 
 

@@ -208,3 +208,45 @@ input:checked + .slider:before {
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .error { color: #d32f2f; margin-top: 15px; font-weight: 600; }
+
+.chat-feed {
+  width: min(760px, 92vw);
+  max-height: 52vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px auto 12px;
+  padding: 10px 6px;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.chat-user {
+  margin-left: auto;
+  background: #2563eb;
+  color: white;
+}
+
+.chat-assistant {
+  margin-right: auto;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .chat-assistant {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-thinking {
+  opacity: 0.75;
+}
