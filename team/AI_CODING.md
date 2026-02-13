@@ -66,4 +66,27 @@ ChatGPT sped up diagram creation and troubleshooting compared to manually refere
 * Tested Mermaid code locally for correct rendering
 * Verified diagrams matched the actual system design
 
+# AI-Assisted Development Report
 
+## Nicholas Kamenica
+
+### AI Tool Used
+Cursor (AI-assisted coding)
+
+### Experiment Description
+I used Cursor's AI assistance to create an initial proof-of-concept front-end chatbot interface in React. The goal was to quickly validate whether React was the right framework for our chatbot implementation and identify any unexpected technical issues early in the development process. Cursor helped generate the basic component structure and text box interface.
+
+### Outcomes Produced
+* Basic chatbot interface with text input box
+* Hardcoded response system ("I am an ai chatbot")
+* Functional React component structure
+* Proof-of-concept demonstrating React viability for the project
+
+### Reflection on Usefulness
+Cursor was valuable for rapidly prototyping the initial interface and confirming that React would work without major obstacles. This allowed me to validate the technical approach before investing significant time in manual development. Going forward, I can use AI tools to generate rough drafts of front-end components, then apply my React knowledge to refine and formalize the implementation.
+
+### Validation and Responsible Use
+* Tested the generated code to ensure it ran without errors
+* Reviewed the React component structure for best practices
+* Used the AI output as a starting point, planning to refactor and improve the code manually
+* Verified the proof-of-concept met initial requirements before proceeding
