@@ -1,7 +1,5 @@
 import pytest
 import sqlite3
-import sys
-import os
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from backend.src.main import app
