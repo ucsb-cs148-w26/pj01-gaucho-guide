@@ -4,11 +4,11 @@ from fastapi import APIRouter
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from backend.src.managers.session_manager import SessionManager
-from backend.src.managers.vector_manager import VectorManager
-from backend.src.models.chat_request_dto import ChatRequestDTO
+from src.managers.session_manager import SessionManager
+from src.managers.vector_manager import VectorManager
+from src.models.chat_request_dto import ChatRequestDTO
 from langchain_core.output_parsers import StrOutputParser
-from backend.src.models.chat_response_dto import ChatResponseDTO
+from src.models.chat_response_dto import ChatResponseDTO
 import json
 
 

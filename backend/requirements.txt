@@ -1,0 +1,26 @@
+# Core FastAPI and Web Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-dotenv>=1.0.0
+
+# LangChain Dependencies
+langchain>=1.2.0
+langchain-core>=1.2.0
+langchain-classic>=1.0.0
+langchain-google-genai>=4.0.0
+langchain-ollama>=1.0.0
+langchain-pinecone>=0.2.0
+langchain-openai>=1.1.0
+
+# Google OAuth
+requests>=2.32.0
+
+# Vector Database
+pinecone>=7.3.0
+
+# Local Inference (Ollama)
+ollama>=0.6.0
+
+# Additional Dependencies
+click>=8.1.0
+pydantic>=2.7.0
