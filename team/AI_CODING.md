@@ -41,3 +41,28 @@ ChatGPT was helpful for quickly generating test scenarios and troubleshooting lo
 - I manually inspected the scraped data to ensure it was accurate and relevant.
 - I verified that the commands worked correctly in the local environment.
 - I cross-checked outputs against actual Reddit pages when results looked unusual.
+
+
+**Name:** Samuel
+
+**AI Tool Used:** ChatGPT
+
+**Experiment Description:**
+I used ChatGPT to help develop a Mermaid graph generator in Cursor for this week’s lab. The goal was to generate diagrams (e.g., workflows and system structures) that could be easily included in project documentation. ChatGPT helped with Mermaid syntax, debugging rendering issues, and refining diagram structure.
+
+**Outcomes Produced:**
+
+* Generated Mermaid diagrams for workflows and component relationships
+* Fixed syntax and rendering errors
+* Integrated diagram generation into the development workflow
+* Created reusable templates for future documentation
+
+**Reflection on Usefulness:**
+ChatGPT sped up diagram creation and troubleshooting compared to manually referencing documentation. It made it easier to iterate quickly and produce clean visuals for technical documentation.
+
+**Validation and Responsible Use:**
+
+* Manually reviewed diagrams to ensure accuracy
+* Tested Mermaid code locally for correct rendering
+* Verified diagrams matched the actual system design
+
