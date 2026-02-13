@@ -119,5 +119,25 @@ For this experiment, I utilized GPT 5.2 High in order to create the api and tune
 
 The tools were very useful as not only did it explain how it was able to create the pipeline, but also allow me to actively change and edit the code in a way I deemed was more suitable for the project. 
 
+## Krystelle – Profile Page Implementation
+**AI Tool Used** : Claude
+
+For this experiment, I used Claude to implement a profile page, used with addition to the OAuth to make it specific towards UCSB students. I asked how we can make it look not only visually pleasing, but also functional. 
+
+
+**What Was Built / Produced**
+
+With the AI assistance from Claude, I was able to make the profile page connected with OAuth and editable to change information if needed. I was given short explanations of what I needed to do and a list of ways to improve its aesthetic. 
+
+**Reflection**
+**Usefulness of the AI Tool**
+
+This tool was useful to clearly and efficiently explain what I needed to do to implement that with our current frontend (with React). The given code was short, but it gave a list of ways to improve its design in different ways.
+
+**Ensuring Correctness, Understanding, and Fair Use** 
+
+I reviewed all generated code and compared it with a previous React and frontend project I worked on to ensure that the code has similar layouts. I tested it locally first to try that all buttons are functional and avoided copying large blocks of code without fully testing it and ensuring that it's correct and what I was looking for.
+
+
 
 
