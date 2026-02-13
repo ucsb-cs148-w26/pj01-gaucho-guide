@@ -30,3 +30,14 @@ The retrospective went smoothly and everyone participated. The conversation stay
 **Advice for the Next Retro Leader**
 Keep the discussion time-boxed and focused on one clear improvement rather than too many changes. Encourage quick input from everyone so all voices are heard, and make sure the final action item is specific and measurable so the team can follow through.
 
+
+## Experiment/Change
+
+**Description**
+The team experimented with assigning each member 1–2 clearly defined tasks per week on the Kanban board. Work was broken into smaller sub-issues so responsibilities were clear and progress could be tracked throughout the week.
+
+**Assessment**
+The change improved team productivity and accountability. All issues for the MVP week were completed on time, and team members made steady progress instead of rushing near the deadline. Breaking work into smaller tasks helped reduce confusion and made it easier to stay focused.
+
+**Decision Going Forward**
+Keep the change. The team will continue assigning small, clearly defined weekly tasks on the Kanban board and will adjust task size if workload becomes uneven.
