@@ -110,5 +110,14 @@ The tools were most useful for quickly explaining concepts like OAuth and JWTs a
 
 I reviewed all generated code, compared it with documentation, and tested everything locally to make sure it worked correctly. I avoided copying large blocks without understanding them and adjusted the output to match our project, ensuring the final implementation was accurate and appropriate to use.
 
+## Tej - Linking backend and frontend to create a clean workflow 
+**AI Tool Used** 
+
+For this experiment, I utilized GPT 5.2 High in order to create the api and tune the validation schema in order to properly setup our backend and frontend calls to the chatbot, including the responses. GPT helped immensely as it saved time creating api calls, and having to manually type out all the schemas we needed. 
+
+**Usefulness** 
+
+The tools were very useful as not only did it explain how it was able to create the pipeline, but also allow me to actively change and edit the code in a way I deemed was more suitable for the project. 
+
 
 
