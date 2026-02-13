@@ -90,3 +90,24 @@ Cursor was valuable for rapidly prototyping the initial interface and confirming
 * Reviewed the React component structure for best practices
 * Used the AI output as a starting point, planning to refactor and improve the code manually
 * Verified the proof-of-concept met initial requirements before proceeding
+
+
+## Anjali – OAuth Authentication Implementation
+** AI Tool Used ** 
+
+For this experiment, I used OpenAI ChatGPT and Anthropic Claude to help with implementing OAuth authentication and debugging backend issues. I mainly asked for short explanations, small code snippets, and help understanding errors while setting up login flows and running the app locally.
+
+** What Was Built / Produced **
+
+With AI assistance, I implemented OAuth login and callback routes, added token verification for protected endpoints, and configured environment variables for client IDs and secrets. I also used the tools to debug dependency problems and runtime errors when trying to start the backend and run the model, which helped me fix missing packages, environment setup issues, and configuration mistakes more quickly.
+
+** Reflection **
+** Usefulness of the AI Tool **
+
+The tools were most useful for quickly explaining concepts like OAuth and JWTs and for generating starter code and troubleshooting tips. They saved time during setup and debugging and helped me move forward when I was stuck, making development faster and more educational overall.
+
+** Ensuring Correctness, Understanding, and Fair Use ** 
+
+I reviewed all generated code, compared it with documentation, and tested everything locally to make sure it worked correctly. I avoided copying large blocks without understanding them and adjusted the output to match our project, ensuring the final implementation was accurate and appropriate to use.
+
+
