@@ -43,7 +43,7 @@ ChatGPT was helpful for quickly generating test scenarios and troubleshooting lo
 - I cross-checked outputs against actual Reddit pages when results looked unusual.
 
 
-**Name:** Samuel
+## Samuel
 
 **AI Tool Used:** ChatGPT
 
@@ -65,4 +65,5 @@ ChatGPT sped up diagram creation and troubleshooting compared to manually refere
 * Manually reviewed diagrams to ensure accuracy
 * Tested Mermaid code locally for correct rendering
 * Verified diagrams matched the actual system design
+
 
