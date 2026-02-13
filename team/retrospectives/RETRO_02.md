@@ -1,7 +1,7 @@
 # Retrospective 02, February 13, 2026
 
 * Led by: Ria
-* Present: Ria, Tej, Nick, Anjali, Wendy, Krystelle
+* Present: Ria, Tej, Nick, Anjali, Wendy, Krystelle, Samuel
 * Absent: None
 
 ## Action item
