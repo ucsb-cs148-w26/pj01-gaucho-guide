@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
 import InputContainer from "./components/InputContainer";
+import ProfilePage from "./components/ProfilePage";
 import "./App.css";
 
 function App() {
@@ -8,6 +9,7 @@ function App() {
   const [error, setError] = useState("");
   const [inputMessage, setInputMessage] = useState("");
   const [theme, setTheme] = useState("light");
+  const [showProfile, setShowProfile] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
@@ -64,7 +66,6 @@ function App() {
     setMessages((m) => [...m, { role: "user", content: text }]);
     setInputMessage("");
 
-
     try {
       const res = await fetch("chat/response", {
         method: "POST",
@@ -99,9 +100,23 @@ function App() {
     }
   };
 
+  // Show profile page
+  if (showProfile) {
+    return (
+      <div className="app" data-theme={theme}>
+        <ProfilePage onBack={() => setShowProfile(false)} />
+      </div>
+    );
+  }
+
+  // Main chat interface
   return (
     <div className="app" data-theme={theme}>
-      <Header theme={theme} toggleTheme={toggleTheme} />
+      <Header 
+        theme={theme} 
+        toggleTheme={toggleTheme}
+        onProfileClick={() => setShowProfile(true)}
+      />
 
       <div className="center-content">
         {!hasSubmitted && (

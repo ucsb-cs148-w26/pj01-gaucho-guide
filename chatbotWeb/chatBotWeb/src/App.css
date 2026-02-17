@@ -250,3 +250,52 @@ input:checked + .slider:before {
 .chat-thinking {
   opacity: 0.75;
 }
+
+/* Profile Button Styles - Add these to your existing App.css */
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.profile-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .profile-button {
+  background: rgba(254, 188, 17, 0.1);
+  border-color: rgba(254, 188, 17, 0.2);
+}
+
+[data-theme="dark"] .profile-button:hover {
+  background: rgba(254, 188, 17, 0.2);
+}
