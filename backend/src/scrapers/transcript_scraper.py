@@ -49,18 +49,20 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 load_dotenv(dotenv_path=".env", override=True)
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
 
 
 def parse_transcript(pdf_bytes: bytes) -> dict:
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(pdf_bytes)
-        tmp_path = tmp.name
-
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
     try:
-        markdown_text = pymupdf4llm.to_markdown(tmp_path)
+        tmp.write(pdf_bytes)
+        tmp.close()
+        markdown_text = pymupdf4llm.to_markdown(tmp.name)
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
