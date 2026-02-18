@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
 import InputContainer from "./components/InputContainer";
+import SignIn from "./components/SignIn";
+import { useAuth } from "./contexts/AuthContext";
 import "./App.css";
 
 function App() {
+  const { user, loading, isAuthenticated } = useAuth();
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [inputMessage, setInputMessage] = useState("");
@@ -99,9 +102,24 @@ function App() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="app" data-theme={theme}>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <SignIn />;
+  }
+
   return (
     <div className="app" data-theme={theme}>
-      <Header theme={theme} toggleTheme={toggleTheme} />
+      <Header theme={theme} toggleTheme={toggleTheme} user={user} />
 
       <div className="center-content">
         {!hasSubmitted && (
