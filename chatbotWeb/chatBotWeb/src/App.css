@@ -696,7 +696,7 @@ input:checked + .slider:before {
   padding: 10px 12px;
   border-radius: 16px;
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.55;
   white-space: pre-wrap;
 }
 
@@ -723,6 +723,13 @@ input:checked + .slider:before {
   opacity: 0.75;
 }
 
+.assistant-line {
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.assistant-line:last-child {
+  margin-bottom: 0;
 /* Profile Button Styles - Add these to your existing App.css */
 
 .header-controls {

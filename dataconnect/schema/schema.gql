@@ -1,0 +1,51 @@
+type Student @table {
+  studentId: String!
+  displayName: String!
+  createdAt: Timestamp!
+  email: String
+  major: String
+  year: Int
+  photoUrl: String
+}
+
+type Course @table {
+  courseCode: String!
+  title: String!
+  units: Int!
+  createdAt: Timestamp!
+  description: String
+  prerequisites: [String]
+  geAreas: [String]
+  quarterOffered: [String]
+}
+
+type Professor @table {
+  firstName: String!
+  lastName: String!
+  department: String!
+  createdAt: Timestamp!
+  researchInterests: [String]
+  email: String
+  officeHours: String
+}
+
+type Teaches @table(key: ["professor", "course", "quarter", "year"]) {
+  professor: Professor!
+  course: Course!
+  quarter: String!
+  year: Int!
+}
+
+type StudentCourse @table(key: ["student", "course"]) {
+  student: Student!
+  course: Course!
+  createdAt: Timestamp!
+  notes: String
+}
+
+type StudentProfessor @table(key: ["student", "professor"]) {
+  student: Student!
+  professor: Professor!
+  createdAt: Timestamp!
+  notes: String
+}

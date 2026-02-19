@@ -1,4 +1,6 @@
 from typing import Any
+from datetime import datetime, timedelta, timezone
+import os
 
 import requests
 import re
@@ -6,6 +8,30 @@ import json
 import time
 
 from langchain_core.documents import Document
+
+RMP_REVIEW_LOOKBACK_YEARS = int(os.getenv("RMP_REVIEW_LOOKBACK_YEARS", "4"))
+RMP_MAX_RECENT_REVIEWS = int(os.getenv("RMP_MAX_RECENT_REVIEWS", "1200"))
+
+
+def _parse_review_date(raw_date: Any) -> datetime | None:
+    if not raw_date:
+        return None
+    if not isinstance(raw_date, str):
+        raw_date = str(raw_date)
+
+    candidates = [raw_date]
+    if raw_date.endswith("Z"):
+        candidates.append(raw_date.replace("Z", "+00:00"))
+
+    for candidate in candidates:
+        try:
+            dt = datetime.fromisoformat(candidate)
+            if dt.tzinfo:
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt
+        except ValueError:
+            continue
+    return None
 
 
 def get_school_reviews(school_ql_id: str) -> list:
@@ -164,7 +190,38 @@ def get_school_reviews(school_ql_id: str) -> list:
 
         time.sleep(0.5)
 
-    return all_reviews
+    if not all_reviews:
+        return all_reviews
+
+    cutoff = datetime.utcnow() - timedelta(days=365 * RMP_REVIEW_LOOKBACK_YEARS)
+    recent_reviews = []
+    older_reviews = []
+    undated_reviews = []
+
+    for doc in all_reviews:
+        dt = _parse_review_date(doc.metadata.get("date"))
+        if dt is None:
+            undated_reviews.append(doc)
+            continue
+        if dt >= cutoff:
+            recent_reviews.append((dt, doc))
+        else:
+            older_reviews.append((dt, doc))
+
+    recent_reviews.sort(key=lambda item: item[0], reverse=True)
+    older_reviews.sort(key=lambda item: item[0], reverse=True)
+
+    ordered_reviews = [doc for _, doc in recent_reviews] + [doc for _, doc in older_reviews] + undated_reviews
+
+    if RMP_MAX_RECENT_REVIEWS > 0:
+        ordered_reviews = ordered_reviews[:RMP_MAX_RECENT_REVIEWS]
+
+    print(
+        f"Prioritized recent reviews: {len(recent_reviews)} within {RMP_REVIEW_LOOKBACK_YEARS} years. "
+        f"Returning {len(ordered_reviews)} total reviews."
+    )
+
+    return ordered_reviews
 
 
 def get_school_ratings(school_id: str) -> Any:

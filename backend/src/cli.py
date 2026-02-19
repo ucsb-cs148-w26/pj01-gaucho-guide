@@ -1,11 +1,12 @@
 import os
 import concurrent.futures
+import json
 
 import click
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
-from langchain_ollama import ChatOllama
 
+from backend.src.llm.llmswap import getLLM
 from backend.src.managers.session_manager import SessionManager
 from backend.src.managers.vector_manager import VectorManager
 from backend.src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
@@ -13,8 +14,26 @@ from backend.src.scrapers.rmp_scraper import get_school_reviews, get_school_prof
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME")
+MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
 UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
+
+
+def normalize_response_content(content):
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_chunks = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text_chunks.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                text_chunks.append(item)
+        joined = "\n".join(chunk for chunk in text_chunks if chunk).strip()
+        if joined:
+            return joined
+
+    return json.dumps(content, ensure_ascii=False)
 
 
 def select_session(session_manager: SessionManager):
@@ -78,7 +97,7 @@ def start():
     print_logo()
 
     try:
-        llm = ChatOllama(model=MODEL_NAME, temperature=0)  # Keep temperature low to avoid hallucinations
+        llm = getLLM(provider="gemini", model_name=MODEL_NAME, temperature=0)
         vector_manager = VectorManager(PINECONE_API_KEY)
         session_manager = SessionManager()
     except Exception as e:
@@ -157,7 +176,7 @@ def start():
             # click.secho(context_text, fg="yellow", bold=True)
             messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
             response = llm.invoke(messages)
-            response_content = response.content
+            response_content = normalize_response_content(response.content)
 
             click.secho(f"[GauchoGuider]: {response_content}", fg="cyan")
 

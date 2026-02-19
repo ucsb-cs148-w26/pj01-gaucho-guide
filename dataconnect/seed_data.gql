@@ -1,0 +1,56 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "Seed data mutation, safe for any logged in user to run.") {
+  professor_insertMany(data: [
+    {
+      firstName: "John",
+      lastName: "Doe",
+      department: "Computer Science",
+      email: "john.doe@example.com",
+      officeHours: "M/W 10-11 AM",
+      researchInterests: ["AI", "Machine Learning"]
+    },
+    {
+      firstName: "Jane",
+      lastName: "Smith",
+      department: "Mathematics",
+      email: "jane.smith@example.com",
+      officeHours: "T/Th 2-3 PM",
+      researchInterests: ["Algebra", "Topology"]
+    }
+  ])
+  course_insertMany(data: [
+    {
+      courseCode: "CS101",
+      title: "Introduction to Computer Science",
+      description: "A foundational course in computer science.",
+      units: 4,
+      geAreas: ["Area B", "Area C"],
+      prerequisites: []
+    },
+    {
+      courseCode: "MATH200",
+      title: "Calculus I",
+      description: "First course in a sequence of calculus.",
+      units: 4,
+      geAreas: ["Area A"],
+      prerequisites: []
+    }
+  ])
+  student_insertMany(data: [
+    {
+      displayName: "Alice Student",
+      studentId: "1234567",
+      major: "Computer Science",
+      year: 2,
+      email: "alice.student@example.com",
+      photoUrl: "https://example.com/alice.jpg"
+    },
+    {
+      displayName: "Bob Learner",
+      studentId: "7654321",
+      major: "Mathematics",
+      year: 3,
+      email: "bob.learner@example.com",
+      photoUrl: "https://example.com/bob.jpg"
+    }
+  ])
+}
