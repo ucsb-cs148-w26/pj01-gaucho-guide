@@ -11,6 +11,7 @@ const MoonIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 );
 
+function Header({ theme, toggleTheme, onProfileClick }) {
 function Header({ theme, toggleTheme }) {
   const { user, signOut } = useAuth();
 
@@ -18,6 +19,16 @@ function Header({ theme, toggleTheme }) {
     <div className="header">
       <h1>Gaucho Guider</h1>
       
+      <div className="header-controls">
+        {/* Profile Button */}
+        <button onClick={onProfileClick} className="profile-button">
+          <img 
+            src="https://ui-avatars.com/api/?name=Student&background=003660&color=febc11&size=32"
+            alt="Profile"
+            className="user-avatar"
+          />
+          <span className="profile-text">Profile</span>
+        </button>
       {/* New Cooler Toggle Switch */}
       <label className="theme-switch">
         <input 

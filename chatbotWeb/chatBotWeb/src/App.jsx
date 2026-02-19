@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar"; // Import the new Sidebar
 import { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
 import InputContainer from "./components/InputContainer";
+import ProfilePage from "./components/ProfilePage";
 import SignIn from "./components/SignIn";
 import { useAuth } from "./contexts/AuthContext";
 import "./App.css";
@@ -18,6 +19,7 @@ function App() {
   const [error, setError] = useState("");
   const [inputMessage, setInputMessage] = useState("");
   const [theme, setTheme] = useState("light");
+  const [showProfile, setShowProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // NEW: Sidebar State
@@ -121,7 +123,6 @@ function App() {
     setMessages((m) => [...m, { role: "user", content: text }]);
     setInputMessage("");
 
-
     try {
       const res = await fetch("chat/response", {
         method: "POST",
@@ -156,6 +157,11 @@ function App() {
     }
   };
 
+  // Show profile page
+  if (showProfile) {
+    return (
+      <div className="app" data-theme={theme}>
+        <ProfilePage onBack={() => setShowProfile(false)} />
   if (loading) {
     return (
       <div className="app" data-theme={theme}>
@@ -167,6 +173,14 @@ function App() {
     );
   }
 
+  // Main chat interface
+  return (
+    <div className="app" data-theme={theme}>
+      <Header 
+        theme={theme} 
+        toggleTheme={toggleTheme}
+        onProfileClick={() => setShowProfile(true)}
+      />
   if (!isAuthenticated) {
     return <SignIn />;
   }
