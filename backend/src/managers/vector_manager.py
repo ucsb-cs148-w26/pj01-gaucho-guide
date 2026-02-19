@@ -8,35 +8,64 @@ import click
 from dotenv import load_dotenv
 from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_classic.retrievers import SelfQueryRetriever
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document
 from pinecone import Pinecone, ServerlessSpec
 
+from backend.src.llm.llmswap import getLLM
 from backend.src.models.query_route import RouteQuery
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
-MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME")
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
+GEMINI_EMBEDDING_DIMENSION = int(os.getenv("GEMINI_EMBEDDING_DIMENSION", "3072"))
 SCHEMA_FILE = os.getenv("SCHEMA_FILE")
+
+
+def _normalize_text_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        text_parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text_parts.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                text_parts.append(item)
+        return "\n".join(part for part in text_parts if part).strip()
+
+    return str(content).strip()
 
 
 class VectorManager:
     def __init__(self, api_key):
         self.pc = Pinecone(api_key=api_key)
-        self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
-        self.llm = ChatOllama(model=MODEL_NAME)
+        self.embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL)
+        self.llm = getLLM(provider="gemini", model_name=GEMINI_MODEL_NAME, temperature=0)
 
         existing_indexes = [i.name for i in self.pc.list_indexes()]
         if PINECONE_INDEX_NAME not in existing_indexes:
             click.secho(f"Creating Pinecone Index '{PINECONE_INDEX_NAME}'...", fg="yellow")
             self.pc.create_index(
                 name=PINECONE_INDEX_NAME,
-                dimension=4096,
+                dimension=GEMINI_EMBEDDING_DIMENSION,
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1")
             )
             time.sleep(2)
+        else:
+            index_info = self.pc.describe_index(name=PINECONE_INDEX_NAME)
+            existing_dimension = index_info.dimension
+            if existing_dimension != GEMINI_EMBEDDING_DIMENSION:
+                raise ValueError(
+                    "Pinecone index dimension mismatch. "
+                    f"Index '{PINECONE_INDEX_NAME}' has dimension {existing_dimension}, "
+                    f"but Gemini embeddings use {GEMINI_EMBEDDING_DIMENSION}. "
+                    "Use a new PINECONE_INDEX_NAME or recreate this index with the Gemini dimension."
+                )
 
         self.vector_store = PineconeVectorStore(
             index_name=PINECONE_INDEX_NAME,
@@ -53,7 +82,8 @@ class VectorManager:
             "Write a very concise description (max 10 words) of what this field represents. "
             "Return ONLY the description, no other text."
         )
-        description = self.llm.invoke(prompt).content.strip()
+        response = self.llm.invoke(prompt)
+        description = _normalize_text_content(response.content)
         return description
 
     def _infer_and_save_schema(self, documents: List[Document], namespace: str):

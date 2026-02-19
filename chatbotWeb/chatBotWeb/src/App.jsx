@@ -20,6 +20,39 @@ function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
+  useEffect(() => {
+    const nextTypingIndex = messages.findIndex(
+      (m) =>
+        m.role === "assistant" &&
+        typeof m.content === "string" &&
+        typeof m.displayed === "string" &&
+        m.displayed.length < m.content.length
+    );
+
+    if (nextTypingIndex === -1) return;
+
+    const intervalId = setInterval(() => {
+      setMessages((prev) => {
+        const current = prev[nextTypingIndex];
+        if (!current || current.role !== "assistant") return prev;
+
+        const fullText = current.content;
+        const shownText = current.displayed ?? "";
+        if (shownText.length >= fullText.length) return prev;
+
+        const step = Math.max(1, Math.ceil(fullText.length / 180));
+        const updated = [...prev];
+        updated[nextTypingIndex] = {
+          ...current,
+          displayed: fullText.slice(0, shownText.length + step),
+        };
+        return updated;
+      });
+    }, 14);
+
+    return () => clearInterval(intervalId);
+  }, [messages]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
@@ -48,6 +81,33 @@ function App() {
     } catch {
       return String(r);
     }
+  };
+
+  const renderMarkdownBold = (text) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={idx}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+  const renderMessageContent = (content, role) => {
+    if (typeof content !== "string") {
+      return JSON.stringify(content);
+    }
+
+    if (role !== "assistant") {
+      return content;
+    }
+
+    const lines = content.split("\n");
+    return lines.map((line, idx) => (
+      <span key={idx} className="assistant-line">
+        {renderMarkdownBold(line)}
+      </span>
+    ));
   };
 
   const handleSubmit = async () => {
@@ -81,10 +141,11 @@ function App() {
       }
 
       const data = await res.json();
+      const assistantText = toText(data.response);
 
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: toText(data.response) },
+        { role: "assistant", content: assistantText, displayed: "" },
       ]);
     } catch (err) {
       setMessages((m) => [
@@ -92,6 +153,7 @@ function App() {
         {
           role: "assistant",
           content: "Something went wrong. Try again.",
+          displayed: "",
         },
       ]);
     } finally {
@@ -119,9 +181,12 @@ function App() {
                   m.role === "user" ? "chat-user" : "chat-assistant"
                 }`}
               >
-                {typeof m.content === "string"
-                  ? m.content
-                  : JSON.stringify(m.content)}
+                {renderMessageContent(
+                  m.role === "assistant" && typeof m.displayed === "string"
+                    ? m.displayed
+                    : m.content,
+                  m.role
+                )}
               </div>
             ))}
 
