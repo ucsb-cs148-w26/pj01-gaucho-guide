@@ -1,8 +1,6 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
-import "./Header.css";
 
-// Simple SVG icons for the toggle
 const SunIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
 );
@@ -12,42 +10,19 @@ const MoonIcon = () => (
 );
 
 function Header({ theme, toggleTheme, onProfileClick }) {
-function Header({ theme, toggleTheme }) {
   const { user, signOut } = useAuth();
 
   return (
     <div className="header">
       <h1>Gaucho Guider</h1>
-      
-      <div className="header-controls">
-        {/* Profile Button */}
-        <button onClick={onProfileClick} className="profile-button">
-          <img 
-            src="https://ui-avatars.com/api/?name=Student&background=003660&color=febc11&size=32"
-            alt="Profile"
-            className="user-avatar"
-          />
-          <span className="profile-text">Profile</span>
-        </button>
-      {/* New Cooler Toggle Switch */}
-      <label className="theme-switch">
-        <input 
-          type="checkbox" 
-          onChange={toggleTheme} 
-          checked={theme === "dark"} 
-        />
-        <span className="slider round">
-            <span className="icon-sun"><SunIcon /></span>
-            <span className="icon-moon"><MoonIcon /></span>
-        </span>
-      </label>
+
       <div className="header-controls">
         {user && (
           <div className="user-profile">
             <div className="user-info">
-              <img 
-                src={user.picture} 
-                alt={user.name} 
+              <img
+                src={user.picture}
+                alt={user.name}
                 className="user-avatar"
                 onError={(e) => {
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=003660&color=febc11&size=32`;
@@ -58,20 +33,20 @@ function Header({ theme, toggleTheme }) {
                 <div className="user-email">{user.email}</div>
               </div>
             </div>
-            <button onClick={signOut} className="logout-btn">
-              Sign Out
-            </button>
+            <button onClick={signOut} className="logout-btn">Sign Out</button>
           </div>
         )}
-        
-        {/* Light/Dark Toggle Switch */}
+
         <label className="theme-switch">
-          <input 
-            type="checkbox" 
-            onChange={toggleTheme} 
-            checked={theme === "dark"} 
+          <input
+            type="checkbox"
+            onChange={toggleTheme}
+            checked={theme === "dark"}
           />
-          <span className="slider"></span>
+          <span className="slider round">
+            <span className="icon-sun"><SunIcon /></span>
+            <span className="icon-moon"><MoonIcon /></span>
+          </span>
         </label>
       </div>
     </div>
