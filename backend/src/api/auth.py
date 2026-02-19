@@ -12,15 +12,44 @@ load_dotenv(dotenv_path=".env", override=True)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 SESSION_SECRET = os.getenv("SESSION_SECRET")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+BYPASS_OAUTH = env_bool("BYPASS_OAUTH", False)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # In-memory session storage (in production, use Redis or database)
 sessions = {}
 
+
+def get_session_user(session_id: Optional[str]) -> Optional[dict]:
+    if not session_id:
+        return None
+    return sessions.get(session_id)
+
 @router.get("/login")
 async def login():
     """Redirect to Google OAuth login"""
+    if BYPASS_OAUTH:
+        mock_email = os.getenv("BYPASS_EMAIL", "student@ucsb.edu")
+        mock_name = os.getenv("BYPASS_NAME", "UCSB Student")
+        session_id = f"session_{hash(mock_email)}"
+        sessions[session_id] = {
+            "email": mock_email,
+            "name": mock_name,
+            "picture": "https://ui-avatars.com/api/?name=UCSB+Student&background=003660&color=febc11&size=120",
+            "verified": True,
+        }
+        return RedirectResponse(url=f"{FRONTEND_URL}?session={session_id}")
+
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google Client ID not configured")
     
@@ -82,7 +111,7 @@ async def callback(code: str):
         }
         
         # Redirect to frontend with session info
-        frontend_url = f"http://localhost:5174?session={session_id}"
+        frontend_url = f"{FRONTEND_URL}?session={session_id}"
         return RedirectResponse(url=frontend_url)
         
     except requests.RequestException as e:

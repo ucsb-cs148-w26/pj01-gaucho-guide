@@ -14,6 +14,7 @@ langchain-openai>=1.1.0
 
 # Google OAuth
 requests>=2.32.0
+firebase-admin>=6.5.0
 
 # Vector Database
 pinecone>=7.3.0
