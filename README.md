@@ -8,15 +8,18 @@ Gaucho Guider is a combination of a chatbot, a web application, and a browser ex
 - the workload they are comfortable with
 - which courses best fit their academic path
 
-We also plan to create a browser extension that works directly with UCSB GOLD. When a student hovers over a course, the extension will show helpful details such as:
+In addition to the chatbot, we plan to include a **GOLD Lens browser extension** that works directly on the UCSB GOLD course registration site. Instead of switching between multiple tabs, students can hover over a course listing on GOLD and instantly see extra context, such as:
 
 - the general level of rigor of the course
+- grade distributions
 - Rate My Professor ratings for the instructor
-- access to past syllabi when available
-
-In addition, the main web application will serve as a central place for UCSB-related resources. This includes things like old syllabi organized by course and professor, along with other tools and information designed to help students feel more confident and less stressed when choosing their classes.
 
 The goal of this project is to simplify course planning by putting useful course information in one place and giving students clear, helpful answers.
+
+## TL;DR Description Summary
+
+Gaucho Guider is a chatbot and browser extension designed to help UCSB students plan their courses and long-term academic paths more effectively. The application will provide an interactive chatbot interface where students can ask questions about classes, prerequisites, and scheduling, supported by a frontend that makes this information easy to explore. In addition to conversational queries, Gaucho Guider will include tools such as a prerequisite planner and a multi-year schedule planner to help students map out their four-year academic plan. The platform will also integrate a “gold lens” view that aggregates useful insights like grade distributions, Rate My Professor data, and key course details, giving students a clearer, data-informed perspective when comparing classes and making enrollment decisions.
+
 
 ## Team Members
 
@@ -77,6 +80,122 @@ We used FastAPI in order to create the API for all of our calls. OpenAI will be 
 
 Gaucho Guider will be available on the public internet, so we plan to restrict access to UCSB students using OAuth-based authentication (for example, requiring an @ucsb.edu login) to reduce the risk of spam or inappropriate use. All authenticated users share the same role and permissions: they can ask the chatbot questions and use the browser extension to get course-planning help, with no separate administrator or moderator features. Users’ goals are to understand courses more clearly, compare class options, and plan schedules with confidence.
 
-# Project Paragraph
 
-Gaucho Guider is a chatbot and browser extension designed to help UCSB students plan their courses and long-term academic paths more effectively. The application will provide an interactive chatbot interface where students can ask questions about classes, prerequisites, and scheduling, supported by a frontend that makes this information easy to explore. In addition to conversational queries, Gaucho Guider will include tools such as a prerequisite planner and a multi-year schedule planner to help students map out their four-year academic plan. The platform will also integrate a “gold lens” view that aggregates useful insights like grade distributions, Rate My Professor data, and key course details, giving students a clearer, data-informed perspective when comparing classes and making enrollment decisions.
+# Installation
+
+## Prerequisites
+
+For normal use, GauchoGuider is a web application and only requires:
+
+- A modern web browser (Chrome, Firefox, Safari, or Edge)
+
+No local installation is required to use the deployed version.
+
+If you want to run the project locally for development, you will need:
+
+- Git
+- Python 3.10+
+- Node.js
+- Ollama installed locally
+- A Pinecone account with an API key
+
+## Dependencies
+
+### Backend
+
+- **Python** – Main backend language
+- **FastAPI** – API layer for handling requests
+- **LangChain / LangChain-Ollama** – Connects the app to the local LLM and manages prompts
+- **Ollama (Llama 3.1)** – Runs the language model locally (NOTE: For right now. We are working to use Gemini instead.)
+- **Pinecone** – Stores and retrieves vector embeddings for RAG
+- **Click** – Handles CLI input and output
+- **python-dotenv** – Loads environment variables such as API keys
+
+### Frontend
+
+- **React** – Builds the user interface
+- **Vite** – Frontend development and bundling
+
+## Installation Steps
+
+### Hosted Version
+
+Since GauchoGuider is a web application, users can access it directly using the deployed link provided in the project.
+
+### Local Setup
+
+Clone the repository:
+
+```bash
+git clone <your-repo-url>
+cd gauchoguider
+```
+
+Set up a virtual environment and install backend dependencies:
+
+```bash
+python -m venv venv
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
+pip install -r requirements.txt
+```
+
+Create a .env file and add your Pinecone API key:
+
+```bash
+PINECONE_API_KEY="your-pinecone-api-key"
+```
+
+Install the local language model:
+```bash
+ollama pull llama3.1
+```
+Start the backend:
+```bash
+python main.py
+```
+Start the frontend:
+```bash
+cd chatbotWeb/chatBotWeb
+npm install
+npm run dev
+```
+Open the app in your browser at:
+```bash
+http://localhost:5173
+```
+
+### Functionality:
+
+GauchoGuider helps UCSB students make course-planning decisions by letting them ask questions in plain English.
+
+Typical use cases include:
+
+- Asking about a course to understand its focus and workload
+- Asking about a professor to see general teaching style and student feedback
+- Asking campus-related questions tied to UCSB student life
+
+The app combines scraped data with AI-generated responses to give quick, easy-to-understand guidance for scheduling and planning.
+
+### Known Problems
+
+- Only the RateMyProfessors scraper is fully implemented. Reddit and UCSB catalog scrapers are still in development.
+- Some questions may return limited or missing answers due to the current data coverage.
+- In some cases, the system will explicitly tell the user that it does not have enough information to answer a question.
+- The model does not always correctly identify whether a question is about a course, a professor, or general campus life, which can affect response quality.
+- The assistant currently uses a very casual tone. We plan to fine-tune this so it sounds more balanced—friendly and conversational, but not overly informal.
+
+
+### Contributing
+
+- Open a pull request
+- Fork it!
+- Create your feature branch: ```bash git checkout -b my-new-feature```
+- Commit your changes: ```bash git commit -am 'Add some feature' ```
+- Push to the branch: ```bash git push origin my-new-feature ```
+- Submit a pull request!
+
+### License
+This project is licensed under the MIT License.
+See the LICENSE file in the repository for details.
+
