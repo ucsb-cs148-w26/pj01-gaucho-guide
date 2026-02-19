@@ -1,7 +1,8 @@
+import json
 import sqlite3
 import uuid
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 DB_PATH = "chat_history.db"
@@ -31,6 +32,14 @@ class SessionManager:
                 content TEXT,
                 timestamp TIMESTAMP,
                 FOREIGN KEY(session_id) REFERENCES sessions(session_id)
+            )
+        ''')
+        # Table for Transcripts (one per session, wiped when session ends)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS transcripts (
+                session_id TEXT PRIMARY KEY,
+                data TEXT,
+                uploaded_at TIMESTAMP
             )
         ''')
         self.conn.commit()
@@ -93,4 +102,28 @@ class SessionManager:
         """Updates the friendly name of a session."""
         cursor = self.conn.cursor()
         cursor.execute("UPDATE sessions SET name = ? WHERE session_id = ?", (new_name, session_id))
+        self.conn.commit()
+
+    def save_transcript(self, session_id: str, data: dict):
+        """Stores parsed transcript JSON for a session, replacing any existing entry."""
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO transcripts (session_id, data, uploaded_at) VALUES (?, ?, ?)",
+            (session_id, json.dumps(data), datetime.now())
+        )
+        self.conn.commit()
+
+    def load_transcript(self, session_id: str) -> Optional[dict]:
+        """Returns the parsed transcript dict for a session, or None if not uploaded."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT data FROM transcripts WHERE session_id = ?", (session_id,))
+        row = cursor.fetchone()
+        if row:
+            return json.loads(row[0])
+        return None
+
+    def clear_transcript(self, session_id: str):
+        """Wipes the transcript for a session (call on session end)."""
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM transcripts WHERE session_id = ?", (session_id,))
         self.conn.commit()

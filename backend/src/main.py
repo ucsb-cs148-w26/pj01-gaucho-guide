@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from backend.src.api import chat, rag, transcript
 from src.api import chat, rag, auth
 
 app = FastAPI()
@@ -20,4 +21,5 @@ app.add_middleware(
 
 app.include_router(chat.router)
 app.include_router(rag.router)
+app.include_router(transcript.router)
 app.include_router(auth.router)
