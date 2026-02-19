@@ -1,29 +1,32 @@
-import { useState, useEffect } from "react";
-import Header from "./components/Header";
-import InputContainer from "./components/InputContainer";
-import Sidebar from "./components/Sidebar"; // Import the new Sidebar
 import { useEffect, useRef, useState } from "react";
 import Header from "./components/Header";
 import InputContainer from "./components/InputContainer";
+import Sidebar from "./components/Sidebar";
 import ProfilePage from "./components/ProfilePage";
 import SignIn from "./components/SignIn";
 import { useAuth } from "./contexts/AuthContext";
 import "./App.css";
-
-// Import your logo
-import gauchoLogo from "./assets/gaucho-logo.png"; 
+import gauchoLogo from "./assets/gaucho-logo.png";
 
 function App() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, getIdToken } = useAuth();
+
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [inputMessage, setInputMessage] = useState("");
   const [theme, setTheme] = useState("light");
   const [showProfile, setShowProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  // NEW: Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const [messages, setMessages] = useState([]);
+  const [isThinking, setIsThinking] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [chatSessions, setChatSessions] = useState([]);
+  const [historyError, setHistoryError] = useState("");
+
+  const bottomRef = useRef(null);
+  const sessionIdRef = useRef(null);
 
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
@@ -33,15 +36,9 @@ function App() {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2500);
+
     return () => clearTimeout(timer);
   }, []);
-
-  const [messages, setMessages] = useState([]);
-  const [isThinking, setIsThinking] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-
-  const bottomRef = useRef(null);
-  const sessionIdRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,42 +77,29 @@ function App() {
     return () => clearInterval(intervalId);
   }, [messages]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
+  useEffect(() => {
+    const loadSessions = async () => {
+      const token = await getIdToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`/chat/sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          setHistoryError(errText || `History load failed: HTTP ${res.status}`);
+          return;
+        }
+        const data = await res.json();
+        setChatSessions(Array.isArray(data.sessions) ? data.sessions : []);
+        setHistoryError("");
+      } catch {
+        setHistoryError("Unable to load chat history right now.");
+      }
+    };
+    loadSessions();
+  }, [getIdToken]);
 
-  const handleSubmit = () => {
-    if (!file && !inputMessage.trim()) {
-      setError("Please type a message or attach a transcript to continue.");
-      return;
-    }
-    setError("");
-    console.log("Submitting:", inputMessage, file ? file.name : "No file");
-  };
-
-  // Sidebar Handlers
-  const handleMouseEnterSidebar = () => setIsSidebarOpen(true);
-  const handleMouseLeaveSidebar = () => setIsSidebarOpen(false);
-
-  return (
-    <div className="app">
-      
-      {/* --- SIDEBAR LOGIC --- */}
-      
-      {/* 1. The Invisible Trigger Strip (Far Left) */}
-      <div 
-        className="hover-trigger" 
-        onMouseEnter={handleMouseEnterSidebar}
-      />
-
-      {/* 2. The Sidebar Wrapper (Handles Mouse Leave) */}
-      <div 
-        className="sidebar-wrapper"
-        onMouseLeave={handleMouseLeaveSidebar}
-      >
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          onNewChat={() => console.log("New Chat Started")}
   const getSessionId = () => {
     if (!sessionIdRef.current) {
       sessionIdRef.current = crypto.randomUUID();
@@ -123,23 +107,47 @@ function App() {
     return sessionIdRef.current;
   };
 
-  const toText = (r) => {
-    if (typeof r === "string") return r;
-    if (Array.isArray(r)) {
-      const textParts = r
-        .map((p) =>
-          p && typeof p === "object" && typeof p.text === "string"
-            ? p.text
+  const toText = (response) => {
+    if (typeof response === "string") return response;
+
+    if (Array.isArray(response)) {
+      const textParts = response
+        .map((part) =>
+          part && typeof part === "object" && typeof part.text === "string"
+            ? part.text
             : null
         )
         .filter(Boolean);
+
       if (textParts.length) return textParts.join("\n");
     }
+
     try {
-      return JSON.stringify(r);
+      return JSON.stringify(response);
     } catch {
-      return String(r);
+      return String(response);
     }
+  };
+
+  const parseMaybeJson = (value) => {
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    if (
+      !(trimmed.startsWith("{") || trimmed.startsWith("[")) ||
+      !(trimmed.endsWith("}") || trimmed.endsWith("]"))
+    ) {
+      return value;
+    }
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  };
+
+  const normalizeStoredAssistantContent = (value) => {
+    const parsed = parseMaybeJson(value);
+    return toText(parsed);
   };
 
   const renderMarkdownBold = (text) => {
@@ -152,41 +160,118 @@ function App() {
     });
   };
 
+  const normalizeAssistantText = (text) => {
+    return text
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const renderMessageContent = (content, role) => {
-    if (typeof content !== "string") {
-      return JSON.stringify(content);
-    }
+    if (typeof content !== "string") return JSON.stringify(content);
+    if (role !== "assistant") return content;
 
-    if (role !== "assistant") {
-      return content;
-    }
+    const normalized = normalizeAssistantText(content);
 
-    const lines = content.split("\n");
-    return lines.map((line, idx) => (
-      <span key={idx} className="assistant-line">
-        {renderMarkdownBold(line)}
-      </span>
-    ));
+    return normalized.split("\n").map((rawLine, idx) => {
+      const line = rawLine.trimEnd();
+      if (!line) {
+        return <span key={idx} className="assistant-line assistant-break" />;
+      }
+
+      const headingMatch = line.match(/^#{1,6}\s*(.+)$/);
+      if (headingMatch) {
+        return (
+          <span key={idx} className="assistant-line assistant-heading">
+            {renderMarkdownBold(headingMatch[1])}
+          </span>
+        );
+      }
+
+      const bulletMatch = line.match(/^[-*•]\s+(.+)$/);
+      if (bulletMatch) {
+        return (
+          <span key={idx} className="assistant-line assistant-bullet">
+            <span className="assistant-bullet-dot">•</span>
+            <span>{renderMarkdownBold(bulletMatch[1])}</span>
+          </span>
+        );
+      }
+
+      return (
+        <span key={idx} className="assistant-line">
+          {renderMarkdownBold(line)}
+        </span>
+      );
+    });
+  };
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   const handleSubmit = async () => {
     if (isThinking) return;
 
     const text = inputMessage.trim();
-    if (!text && !file) return;
+    if (!text && !file) {
+      setError("Please type a message or attach a transcript to continue.");
+      return;
+    }
 
+    const sessionId = getSessionId();
+    setError("");
     setHasSubmitted(true);
     setIsThinking(true);
 
-    const sessionId = getSessionId();
-
-    setMessages((m) => [...m, { role: "user", content: text }]);
-    setInputMessage("");
-
     try {
-      const res = await fetch("chat/response", {
+      if (file) {
+        const formData = new FormData();
+        formData.append("session_id", sessionId);
+        formData.append("file", file);
+
+        const token = await getIdToken();
+        const transcriptRes = await fetch("/transcript/parse", {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: formData,
+        });
+
+        if (!transcriptRes.ok) {
+          const errText = await transcriptRes.text();
+          throw new Error(errText || `Transcript upload failed: HTTP ${transcriptRes.status}`);
+        }
+
+        const transcriptPayload = await transcriptRes.json();
+        const major = transcriptPayload?.data?.major;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: major
+              ? `Transcript uploaded and added to context. I detected your major as ${major}.`
+              : "Transcript uploaded and added to context.",
+            displayed: "",
+          },
+        ]);
+        setFile(null);
+      }
+
+      if (!text) {
+        setInputMessage("");
+        return;
+      }
+
+      setMessages((prev) => [...prev, { role: "user", content: text }]);
+      setInputMessage("");
+
+      const token = await getIdToken();
+      const res = await fetch("/chat/response", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           chat_session_id: sessionId,
           message: text,
@@ -201,16 +286,32 @@ function App() {
       const data = await res.json();
       const assistantText = toText(data.response);
 
-      setMessages((m) => [
-        ...m,
+      setMessages((prev) => [
+        ...prev,
         { role: "assistant", content: assistantText, displayed: "" },
       ]);
+
+      if (token) {
+        const sessionsRes = await fetch(`/chat/sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (sessionsRes.ok) {
+          const sessionsData = await sessionsRes.json();
+          setChatSessions(
+            Array.isArray(sessionsData.sessions) ? sessionsData.sessions : []
+          );
+        }
+      }
     } catch (err) {
-      setMessages((m) => [
-        ...m,
+      const errMessage =
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Try again.";
+      setMessages((prev) => [
+        ...prev,
         {
           role: "assistant",
-          content: "Something went wrong. Try again.",
+          content: errMessage,
           displayed: "",
         },
       ]);
@@ -219,11 +320,61 @@ function App() {
     }
   };
 
-  // Show profile page
-  if (showProfile) {
-    return (
-      <div className="app" data-theme={theme}>
-        <ProfilePage onBack={() => setShowProfile(false)} />
+  const handleNewChat = async () => {
+    const oldSessionId = sessionIdRef.current;
+    if (oldSessionId) {
+      try {
+        await fetch(
+          `/transcript/clear?session_id=${encodeURIComponent(oldSessionId)}`,
+          { method: "DELETE" }
+        );
+      } catch {
+        // Ignore clear errors in UI reset path.
+      }
+    }
+
+    sessionIdRef.current = null;
+    setMessages([]);
+    setHasSubmitted(false);
+    setInputMessage("");
+    setFile(null);
+    setError("");
+  };
+
+  const handleSelectSession = async (chatSessionId) => {
+    if (!chatSessionId) return;
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      const res = await fetch(`/chat/sessions/${encodeURIComponent(chatSessionId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const restored = (data.messages || []).map((m) => ({
+        role: m.role === "ai" ? "assistant" : "user",
+        content:
+          m.role === "ai"
+            ? normalizeStoredAssistantContent(m.content)
+            : m.content,
+        displayed:
+          m.role === "ai"
+            ? normalizeStoredAssistantContent(m.content)
+            : undefined,
+      }));
+      sessionIdRef.current = chatSessionId;
+      setMessages(restored);
+      setHasSubmitted(restored.length > 0);
+      setInputMessage("");
+      setError("");
+    } catch {
+      // no-op
+    }
+  };
+
+  const handleMouseEnterSidebar = () => setIsSidebarOpen(true);
+  const handleMouseLeaveSidebar = () => setIsSidebarOpen(false);
+
   if (loading) {
     return (
       <div className="app" data-theme={theme}>
@@ -235,82 +386,82 @@ function App() {
     );
   }
 
-  // Main chat interface
-  return (
-    <div className="app" data-theme={theme}>
-      <Header 
-        theme={theme} 
-        toggleTheme={toggleTheme}
-        onProfileClick={() => setShowProfile(true)}
-      />
   if (!isAuthenticated) {
     return <SignIn />;
   }
 
+  if (showProfile) {
+    return (
+      <div className="app" data-theme={theme}>
+        <ProfilePage onBack={() => setShowProfile(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="app" data-theme={theme}>
-      <Header theme={theme} toggleTheme={toggleTheme} user={user} />
+      <div className="hover-trigger" onMouseEnter={handleMouseEnterSidebar} />
 
-      <div className="center-content">
-        {!hasSubmitted && (
-          <h2 className="prompt gold-text">
-            How can I help you today?
-          </h2>
-        )}
-
-        {hasSubmitted && (
-          <div className="chat-feed">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`chat-bubble ${
-                  m.role === "user" ? "chat-user" : "chat-assistant"
-                }`}
-              >
-                {renderMessageContent(
-                  m.role === "assistant" && typeof m.displayed === "string"
-                    ? m.displayed
-                    : m.content,
-                  m.role
-                )}
-              </div>
-            ))}
-
-            {isThinking && (
-              <div className="chat-bubble chat-assistant chat-thinking">
-                Thinking…
-              </div>
-            )}
-
-            <div ref={bottomRef} />
-          </div>
-        )}
-
-        <InputContainer
-          file={file}
-          setFile={setFile}
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          error={error}
-          setError={setError}
-          onSubmit={handleSubmit}
+      <div className="sidebar-wrapper" onMouseLeave={handleMouseLeaveSidebar}>
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onNewChat={handleNewChat}
+          sessions={chatSessions}
+          onSelectSession={handleSelectSession}
         />
+        {historyError && (
+          <div className="history-error-inline">{historyError}</div>
+        )}
       </div>
 
-
-      {/* --- REST OF THE APP --- */}
-
-      <div className={`logo-wrapper ${isLoading ? "loading-mode" : "background-mode"}`}>
+      <div
+        className={`logo-wrapper ${
+          isLoading ? "loading-mode" : "background-mode"
+        }`}
+      >
         <img src={gauchoLogo} alt="Gaucho Logo" className="mascot-logo" />
       </div>
 
-      {/* We add a class to shift content slightly when sidebar is open if you want, 
-          but usually for 'hover' mode, we just let it overlay. */}
       <div className={`main-content-wrapper ${!isLoading ? "visible" : ""}`}>
-        <Header theme={theme} toggleTheme={toggleTheme} />
+        <Header
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onProfileClick={() => setShowProfile(true)}
+        />
 
         <div className="center-content">
-          <h2 className="prompt">How can I help you today?</h2>
+          {!hasSubmitted && (
+            <h2 className="prompt gold-text">How can I help you today?</h2>
+          )}
+
+          {hasSubmitted && (
+            <div className="chat-feed">
+              {messages.map((message, idx) => (
+                <div
+                  key={idx}
+                  className={`chat-bubble ${
+                    message.role === "user" ? "chat-user" : "chat-assistant"
+                  }`}
+                >
+                  {renderMessageContent(
+                    message.role === "assistant" &&
+                      typeof message.displayed === "string"
+                      ? message.displayed
+                      : message.content,
+                    message.role
+                  )}
+                </div>
+              ))}
+
+              {isThinking && (
+                <div className="chat-bubble chat-assistant chat-thinking">
+                  Thinking...
+                </div>
+              )}
+
+              <div ref={bottomRef} />
+            </div>
+          )}
 
           <InputContainer
             file={file}
@@ -323,7 +474,6 @@ function App() {
           />
         </div>
       </div>
-
     </div>
   );
 }

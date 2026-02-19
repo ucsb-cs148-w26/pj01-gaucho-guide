@@ -13,8 +13,8 @@ from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document
 from pinecone import Pinecone, ServerlessSpec
 
-from backend.src.llm.llmswap import getLLM
-from backend.src.models.query_route import RouteQuery
+from src.llm.llmswap import getLLM
+from src.models.query_route import RouteQuery
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")

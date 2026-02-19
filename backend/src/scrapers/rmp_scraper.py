@@ -9,8 +9,41 @@ import time
 
 from langchain_core.documents import Document
 
-RMP_REVIEW_LOOKBACK_YEARS = int(os.getenv("RMP_REVIEW_LOOKBACK_YEARS", "4"))
+RMP_REVIEW_LOOKBACK_YEARS = int(os.getenv("RMP_REVIEW_LOOKBACK_YEARS", "2"))
 RMP_MAX_RECENT_REVIEWS = int(os.getenv("RMP_MAX_RECENT_REVIEWS", "1200"))
+RMP_PROFESSOR_LOOKBACK_YEARS = int(os.getenv("RMP_PROFESSOR_LOOKBACK_YEARS", "2"))
+RMP_TEACHER_ACTIVITY_PAGE_SIZE = int(os.getenv("RMP_TEACHER_ACTIVITY_PAGE_SIZE", "20"))
+RMP_TEACHER_ACTIVITY_MAX_PAGES = int(os.getenv("RMP_TEACHER_ACTIVITY_MAX_PAGES", "3"))
+RMP_VALIDATE_PROFESSOR_ACTIVITY = os.getenv("RMP_VALIDATE_PROFESSOR_ACTIVITY", "false").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+
+
+def _normalize_school_ql_id(raw_id: str) -> str:
+    """
+    RMP school IDs are base64-like relay IDs (e.g. U2Nob29sLTEwNzc=).
+    If env/config drops trailing '=', pad to valid base64 length.
+    """
+    value = (raw_id or "").strip()
+    if not value:
+        return value
+    padding = len(value) % 4
+    if padding:
+        value = value + ("=" * (4 - padding))
+    return value
+
+
+def _graphql_error_message(payload: dict[str, Any]) -> str | None:
+    errors = payload.get("errors")
+    if not errors:
+        return None
+    msgs = []
+    for err in errors:
+        if isinstance(err, dict):
+            msg = err.get("message")
+            if msg:
+                msgs.append(str(msg))
+    return "; ".join(msgs) if msgs else str(errors)
 
 
 def _parse_review_date(raw_date: Any) -> datetime | None:
@@ -35,6 +68,7 @@ def _parse_review_date(raw_date: Any) -> datetime | None:
 
 
 def get_school_reviews(school_ql_id: str) -> list:
+    school_ql_id = _normalize_school_ql_id(school_ql_id)
     url = "https://www.ratemyprofessors.com/graphql"
 
     headers = {
@@ -161,8 +195,16 @@ def get_school_reviews(school_ql_id: str) -> list:
 
         data = response.json()
 
+        err_msg = _graphql_error_message(data)
+        if err_msg:
+            print(f"RMP review scrape GraphQL error: {err_msg}")
+            break
+
         try:
             school_node = data["data"]["node"]
+            if school_node is None:
+                print("RMP review scrape returned null school node. Check UCSB_SCHOOL_ID format.")
+                break
             ratings_data = school_node["ratings"]
             edges = ratings_data["edges"]
             page_info = ratings_data["pageInfo"]
@@ -257,6 +299,7 @@ def get_school_ratings(school_id: str) -> Any:
 
 
 def get_school_professors(school_ql_id: str) -> list:
+    school_ql_id = _normalize_school_ql_id(school_ql_id)
     url = "https://www.ratemyprofessors.com/graphql"
 
     headers = {
@@ -337,11 +380,101 @@ def get_school_professors(school_ql_id: str) -> list:
     }
     """
 
+    def get_teacher_recent_activity(teacher_id: str, cutoff_dt: datetime) -> tuple[bool, int, str | None]:
+        """
+        Returns:
+          has_recent_review, recent_review_count, latest_review_date
+        """
+        teacher_query = """
+        query TeacherRatingsActivityQuery($id: ID!, $count: Int!, $cursor: String) {
+          node(id: $id) {
+            __typename
+            ... on Teacher {
+              ratings(first: $count, after: $cursor) {
+                edges {
+                  node {
+                    date
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+              }
+            }
+            id
+          }
+        }
+        """
+
+        cursor_local = ""
+        has_next_local = True
+        pages_checked = 0
+        recent_count = 0
+        latest_dt = None
+
+        while has_next_local and pages_checked < max(1, RMP_TEACHER_ACTIVITY_MAX_PAGES):
+            variables_local = {
+                "id": teacher_id,
+                "count": max(1, RMP_TEACHER_ACTIVITY_PAGE_SIZE),
+                "cursor": cursor_local if cursor_local else ""
+            }
+
+            try:
+                response_local = requests.post(
+                    url,
+                    json={"query": teacher_query, "variables": variables_local},
+                    headers=headers,
+                    timeout=20,
+                )
+                if response_local.status_code != 200:
+                    return False, 0, None
+                payload_local = response_local.json()
+                ratings_block = payload_local["data"]["node"]["ratings"]
+                edges_local = ratings_block["edges"]
+                page_info_local = ratings_block["pageInfo"]
+            except Exception:
+                return False, 0, None
+
+            saw_older_review = False
+            for edge_local in edges_local:
+                raw_date = edge_local.get("node", {}).get("date")
+                dt = _parse_review_date(raw_date)
+                if dt is None:
+                    continue
+
+                if latest_dt is None or dt > latest_dt:
+                    latest_dt = dt
+
+                if dt >= cutoff_dt:
+                    recent_count += 1
+                else:
+                    saw_older_review = True
+
+            pages_checked += 1
+            has_next_local = page_info_local.get("hasNextPage", False)
+            cursor_local = page_info_local.get("endCursor")
+
+            # Ratings are usually newest-first; once old dates appear, no need to keep paging.
+            if saw_older_review:
+                break
+
+            time.sleep(0.15)
+
+        latest_date_str = latest_dt.date().isoformat() if latest_dt else None
+        return recent_count > 0, recent_count, latest_date_str
+
     all_professors = []
     cursor = ""
     has_next_page = True
+    cutoff = datetime.utcnow() - timedelta(days=365 * RMP_PROFESSOR_LOOKBACK_YEARS)
+    skipped_no_recent = 0
 
     print(f"Starting professor scrape for School ID: {school_ql_id}")
+    if RMP_VALIDATE_PROFESSOR_ACTIVITY:
+        print(f"Keeping professors with at least one review in last {RMP_PROFESSOR_LOOKBACK_YEARS} years.")
+    else:
+        print("Skipping per-professor review recency validation for faster scraping.")
 
     while has_next_page:
         variables = {
@@ -361,8 +494,16 @@ def get_school_professors(school_ql_id: str) -> list:
 
         data = response.json()
 
+        err_msg = _graphql_error_message(data)
+        if err_msg:
+            print(f"RMP professor scrape GraphQL error: {err_msg}")
+            break
+
         try:
             school_node = data["data"]["search"]
+            if school_node is None or school_node.get("teachers") is None:
+                print("RMP professor scrape returned null teachers. Check UCSB_SCHOOL_ID format.")
+                break
             professor_data = school_node["teachers"]
             edges = professor_data["edges"]
             page_info = professor_data["pageInfo"]
@@ -373,9 +514,20 @@ def get_school_professors(school_ql_id: str) -> list:
 
         for edge in edges:
             node = edge["node"]
-            review_text = (f"Professor: {node.get('firstName')} {node.get('lastName')}\n"
-                           f"Rating: {node.get('avgRating')}\nDifficulty: {node.get('avgDifficulty')}\nWould_take_again"
-                           f"_percentage: {node.get('wouldTakeAgainPercent')}\nDepartment: {node.get('department')}")
+            recent_count = None
+            latest_review_date = None
+            if RMP_VALIDATE_PROFESSOR_ACTIVITY:
+                teacher_id = node.get("id")
+                has_recent, recent_count, latest_review_date = get_teacher_recent_activity(teacher_id, cutoff)
+                if not has_recent:
+                    skipped_no_recent += 1
+                    continue
+
+            review_text = (
+                f"Professor: {node.get('firstName')} {node.get('lastName')}\n"
+                f"Rating: {node.get('avgRating')}\nDifficulty: {node.get('avgDifficulty')}\nWould_take_again"
+                f"_percentage: {node.get('wouldTakeAgainPercent')}\nDepartment: {node.get('department')}"
+            )
             doc = Document(
                 page_content=review_text,
                 metadata={
@@ -387,13 +539,27 @@ def get_school_professors(school_ql_id: str) -> list:
                     "source": "ratemyprofessors",
                 }
             )
+            if RMP_VALIDATE_PROFESSOR_ACTIVITY:
+                doc.metadata["recent_review_count"] = recent_count
+                doc.metadata["latest_review_date"] = latest_review_date
+                doc.metadata["lookback_years"] = RMP_PROFESSOR_LOOKBACK_YEARS
             all_professors.append(doc)
 
-        print(f"Fetched {len(edges)} professors. Total: {len(all_professors)}")
+        if RMP_VALIDATE_PROFESSOR_ACTIVITY:
+            print(
+                f"Scanned {len(edges)} professors. "
+                f"Kept: {len(all_professors)} | Skipped (no recent reviews): {skipped_no_recent}"
+            )
+        else:
+            print(f"Scanned {len(edges)} professors. Total kept: {len(all_professors)}")
 
         has_next_page = page_info["hasNextPage"]
         cursor = page_info["endCursor"]
 
         time.sleep(0.5)
 
+    print(
+        f"Professor scrape complete. Final kept professors: {len(all_professors)} "
+        f"(lookback: {RMP_PROFESSOR_LOOKBACK_YEARS} years)"
+    )
     return all_professors
