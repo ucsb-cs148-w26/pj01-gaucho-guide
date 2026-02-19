@@ -4,11 +4,11 @@ from fastapi import APIRouter
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from backend.src.managers.session_manager import SessionManager
-from backend.src.managers.vector_manager import VectorManager
-from backend.src.models.chat_request_dto import ChatRequestDTO
+from src.managers.session_manager import SessionManager
+from src.managers.vector_manager import VectorManager
+from src.models.chat_request_dto import ChatRequestDTO
 from langchain_core.output_parsers import StrOutputParser
-from backend.src.models.chat_response_dto import ChatResponseDTO
+from src.models.chat_response_dto import ChatResponseDTO
 import json
 
 
@@ -60,7 +60,16 @@ async def get_chat_response(request: ChatRequestDTO):
         docs = vector_manager.std_search(user_text, k=4)
         context_text = "\n\n".join([d.page_content for d in docs])
 
-        system_prompt = SystemMessage(content="""
+        transcript_data = session_manager.load_transcript(str(request.chat_session_id))
+        transcript_section = ""
+        if transcript_data:
+            transcript_section = f"""
+
+STUDENT TRANSCRIPT (use this to personalize recommendations — do NOT recommend courses the student has already passed):
+{json.dumps(transcript_data, indent=2)}
+"""
+
+        system_prompt = SystemMessage(content=f"""
 You are GauchoGuider. A guide for ucsb students navigating through college life.
 
 RULES:
@@ -70,6 +79,7 @@ politely steer them back to UCSB or say you only know about UCSB.
 3. Use the provided Context (reviews and stats) to answer questions accurately.
 4. When mentioning names, always use the provided Context and the Context only. You can utilize reverse search to gain required info to answer, however.
 5. Be casual, use slang like "IV" (Isla Vista), "The Loop", "Arroyo", etc., if appropriate.
+6. If a student transcript is provided, use it to give personalized course recommendations.{transcript_section}
 """.strip())
 
         rag_prompt = f"""

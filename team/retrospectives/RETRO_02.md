@@ -31,13 +31,28 @@ The retrospective went smoothly and everyone participated. The conversation stay
 Keep the discussion time-boxed and focused on one clear improvement rather than too many changes. Encourage quick input from everyone so all voices are heard, and make sure the final action item is specific and measurable so the team can follow through.
 
 
-## Experiment/Change
+## Experiment / Change
 
-**Description**
-The team experimented with assigning each member 1–2 clearly defined tasks per week on the Kanban board. Work was broken into smaller sub-issues so responsibilities were clear and progress could be tracked throughout the week.
+### Description  
+The experiment is adding a short 10-minute async daily check-in using personal group chat. Each person posts what they worked on yesterday, what they plan to work on today, and if they’re blocked on anything. There are no meetings—just quick written updates.
 
-**Assessment**
-The change improved team productivity and accountability. All issues for the MVP week were completed on time, and team members made steady progress instead of rushing near the deadline. Breaking work into smaller tasks helped reduce confusion and made it easier to stay focused.
+---
 
-**Decision Going Forward**
-Keep the change. The team will continue assigning small, clearly defined weekly tasks on the Kanban board and will adjust task size if workload becomes uneven.
+### How it’s going  
+This experiment is just starting. We’re watching to see if blockers come up earlier and if the team has a better sense of what everyone is working on day to day.
+
+---
+
+### Update (Wednesday, February 18, 2026)  
+So far, the check-ins have been helpful. People are reading them, and a few blockers were shared earlier than usual. Instead of finding issues late in the week, we were able to talk through them the same day. It’s also been easier to see who’s working on what without extra meetings.
+
+---
+
+### Decision Going Forward  
+Decision pending. We want to see if this continues to be useful over the next few weeks or starts to feel repetitive. For now, we’ll keep the daily check-ins and reflect on them each week.
+
+---
+
+### Update (Friday, February 20, 2026)  
+To be Updated
+
