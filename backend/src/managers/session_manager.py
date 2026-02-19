@@ -1,11 +1,12 @@
 import json
+import os
 import sqlite3
 import uuid
 from datetime import datetime
 from typing import List, Optional, Tuple
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
-DB_PATH = "chat_history.db"
+DB_PATH = os.getenv("SESSION_DB_PATH", "chat_history.db")
 
 
 class SessionManager:

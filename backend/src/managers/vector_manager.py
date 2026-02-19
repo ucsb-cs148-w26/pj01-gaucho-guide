@@ -21,7 +21,7 @@ PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
 GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
 GEMINI_EMBEDDING_DIMENSION = int(os.getenv("GEMINI_EMBEDDING_DIMENSION", "3072"))
-SCHEMA_FILE = os.getenv("SCHEMA_FILE")
+SCHEMA_FILE = os.getenv("SCHEMA_FILE", "namespace_schemas.json")
 
 
 def _normalize_text_content(content: Any) -> str:
