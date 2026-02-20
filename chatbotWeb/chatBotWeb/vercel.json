@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/chat/:path*", "destination": "/api/chat/:path*" },
+    { "source": "/healthz", "destination": "/api/healthz" },
+    { "source": "/ping", "destination": "/api/ping" }
+  ]
+}

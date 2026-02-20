@@ -1,0 +1,17 @@
+fastapi>=0.104.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.9
+
+langchain>=1.2.0
+langchain-core>=1.2.0
+langchain-classic>=1.0.0
+langchain-google-genai>=4.0.0
+langchain-ollama>=1.0.0
+langchain-pinecone>=0.2.0
+langchain-openai>=1.1.0
+
+pinecone>=7.3.0
+firebase-admin>=6.5.0
+requests>=2.32.0
+click>=8.1.0
+pydantic>=2.7.0
