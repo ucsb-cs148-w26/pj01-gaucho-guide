@@ -11,7 +11,7 @@ import gauchoLogo from "./assets/gaucho-logo.png";
 function App() {
   const { loading, isAuthenticated, getIdToken } = useAuth();
   const configuredApiBase =
-    import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "/api" : "");
+    (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.trim()) || "/api";
   const API_BASE = configuredApiBase.replace(/\/+$/, "").replace(/\/main$/, "");
 
   const [file, setFile] = useState(null);
@@ -31,10 +31,7 @@ function App() {
   const bottomRef = useRef(null);
   const sessionIdRef = useRef(null);
 
-  const apiUrl = (path) => {
-    if (!API_BASE) return path;
-    return `${API_BASE}${path}`;
-  };
+  const apiUrl = (path) => `${API_BASE}${path}`;
 
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
