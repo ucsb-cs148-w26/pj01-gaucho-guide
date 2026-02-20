@@ -2,11 +2,6 @@
   "installCommand": "echo skip-root-install",
   "buildCommand": "cd chatbotWeb/chatBotWeb && npm install --include=dev --no-audit --no-fund && npm run build",
   "outputDirectory": "chatbotWeb/chatBotWeb/dist",
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.11"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
