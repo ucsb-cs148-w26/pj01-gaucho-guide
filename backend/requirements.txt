@@ -1,27 +1,27 @@
-# Core FastAPI and Web Server
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-python-dotenv>=1.0.0
+# FastAPI runtime
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+python-dotenv>=1.0.0,<2.0.0
+python-multipart>=0.0.9,<1.0.0
 
-# LangChain Dependencies
-langchain>=1.2.0
-langchain-core>=1.2.0
-langchain-classic>=1.0.0
-langchain-google-genai>=4.0.0
-langchain-ollama>=1.0.0
-langchain-pinecone>=0.2.0
-langchain-openai>=1.1.0
+# Core utilities
+requests>=2.32.0,<3.0.0
+pydantic>=2.7.0,<3.0.0
+click>=8.1.0,<9.0.0
 
-# Google OAuth
-requests>=2.32.0
-firebase-admin>=6.5.0
+# Firebase Admin SDK
+firebase-admin>=6.5.0,<7.0.0
 
-# Vector Database
-pinecone>=7.3.0
+# Vector DB
+pinecone>=7.3.0,<8.0.0
 
-# Local Inference (Ollama)
-ollama>=0.6.0
+# LangChain stack used by current backend imports
+langchain>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-classic>=0.3.0,<0.4.0
+langchain-google-genai>=2.0.0,<3.0.0
+langchain-pinecone>=0.2.0,<0.3.0
+langchain-ollama>=0.2.0,<0.3.0
 
-# Additional Dependencies
-click>=8.1.0
-pydantic>=2.7.0
+# Transcript parser fallback
+pypdf>=5.0.0,<6.0.0

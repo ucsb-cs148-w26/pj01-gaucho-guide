@@ -1,5 +1,11 @@
 {
+  "installCommand": "pip install -r requirements.txt",
+  "buildCommand": "echo skip-backend-build",
   "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/index?__path=healthz"
+    },
     {
       "source": "/healthz",
       "destination": "/api/index?__path=healthz"
