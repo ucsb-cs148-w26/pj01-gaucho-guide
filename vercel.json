@@ -4,8 +4,12 @@
   "outputDirectory": "chatbotWeb/chatBotWeb/dist",
   "rewrites": [
     {
-      "source": "/(chat|rag|transcript|auth)(.*)",
-      "destination": "/api/main.py"
+      "source": "/(chat|rag|transcript|auth)",
+      "destination": "/api/main"
+    },
+    {
+      "source": "/(chat|rag|transcript|auth)/(.*)",
+      "destination": "/api/main"
     }
   ]
 }
