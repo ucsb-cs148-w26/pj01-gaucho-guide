@@ -28,3 +28,8 @@ app.include_router(auth.router)
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
+
+@app.get("/ping")
+async def ping():
+    return {"ok": True}
