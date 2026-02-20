@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/(chat|rag|transcript|auth)(.*)",
-      "destination": "/api/index.py"
+      "destination": "/api/main.py"
     }
   ]
 }
