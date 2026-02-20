@@ -12,13 +12,14 @@ click>=8.1.0,<9.0.0
 # Firebase Admin SDK
 firebase-admin>=6.5.0,<7.0.0
 
-# Vector DB (use SDK directly; do NOT use langchain-pinecone)
+# Vector DB
 pinecone>=7.3.0,<8.0.0
 
 # LangChain (keep minimal + portable)
 langchain>=0.2.0,<0.4.0
 langchain-core>=0.2.0,<0.4.0
 langchain-google-genai>=1.0.0,<3.0.0
+langchain-pinecone>=0.2.0,<0.3.0
 langchain-openai>=0.1.0,<1.0.0
 
 # Transcript parser fallback

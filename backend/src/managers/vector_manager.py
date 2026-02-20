@@ -6,8 +6,14 @@ import hashlib
 
 import click
 from dotenv import load_dotenv
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
-from langchain_classic.retrievers import SelfQueryRetriever
+try:
+    # Preferred path for newer LangChain split packages.
+    from langchain_classic.chains.query_constructor.schema import AttributeInfo
+    from langchain_classic.retrievers import SelfQueryRetriever
+except ImportError:
+    # Backward-compatible path for older LangChain installs.
+    from langchain.chains.query_constructor.schema import AttributeInfo
+    from langchain.retrievers import SelfQueryRetriever
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document
