@@ -10,7 +10,8 @@ import gauchoLogo from "./assets/gaucho-logo.png";
 
 function App() {
   const { loading, isAuthenticated, getIdToken } = useAuth();
-  const configuredApiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+  const configuredApiBase =
+    import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "/api" : "");
   const API_BASE = configuredApiBase.replace(/\/+$/, "").replace(/\/main$/, "");
 
   const [file, setFile] = useState(null);
