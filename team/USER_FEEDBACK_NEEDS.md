@@ -34,29 +34,30 @@ We want to improve how easy and intuitive the product feels.
 * Was anything confusing or frustrating?
 * What features would make you use GauchoGuide more often?
 
-
 ## Improvement Goal (Lab07)
 
 ### Objective
-Improve the usability and clarity of the application so that new users can successfully complete key tasks without confusion or external help.
+Improve system speed and ensure responses include useful student insights from Reddit and RateMyProfessors.
 
-### Key Results (Metrics)
+### Metrics
 
-1. **Clarity Rating**
-   - Average rating of **4/5 or higher** from peer testers on:
-     - Ease of use
-     - Clarity of results
-     - Overall experience
+1. **Response Latency**
+   - Average response time ≤ **3 seconds**
+   - Peer testers run 5 queries and record response times.
 
-### How Peer Teams Can Test This
+2. **Data Coverage (Scraping Quality)**
+   - At least **80% of course/professor queries** include:
+     - Student perspective (Reddit-style insights), or
+     - Professor/course details (difficulty, teaching style, sentiment).
 
-When testing our app, please:
-1. Attempt the following tasks without guidance:
-   - Perform a search/query
-   - Interpret the returned result
-   - Navigate to another feature (if applicable)
+3. **Usefulness**
+   - Peer testers rate each response (1–5)
+   - Average rating ≥ **4/5**
 
-2. After testing, answer:
-   - Rate the app’s usability (1–5)
+### How to Test
 
-We will use this feedback to measure whether the usability improvements meet our target.
+Peer teams:
+- Run course and professor queries
+- Record response time
+- Rate usefulness
+- Note if student insight or professor/course details were included
