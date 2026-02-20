@@ -1,13 +1,33 @@
+import os
+import sys
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+
+def _find_repo_root(start_dir: str) -> str:
+    current = os.path.abspath(start_dir)
+    for _ in range(8):
+        if os.path.isdir(os.path.join(current, "backend")):
+            return current
+        current = os.path.dirname(current)
+    return os.path.abspath(start_dir)
+
+
+REPO_ROOT = _find_repo_root(os.path.dirname(os.path.abspath(__file__)))
+BACKEND_DIR = os.path.join(REPO_ROOT, "backend")
+
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
+
+
 try:
-    from api.index import app as imported_app
+    from src.main import app as imported_app  # noqa: E402
 
     class PrefixNormalizingApp:
         def __init__(self, inner_app):
             self.inner_app = inner_app
-            self.prefixes = ("/api/main", "/api", "/main")
+            self.prefixes = ("/api/index", "/api/main", "/api", "/main")
 
         def _normalized(self, path: str) -> str:
             for prefix in self.prefixes:
@@ -38,6 +58,7 @@ try:
                 if normalized_path != path:
                     scope = dict(scope)
                     scope["path"] = normalized_path
+
             await self.inner_app(scope, receive, send)
 
     app = PrefixNormalizingApp(imported_app)
@@ -50,7 +71,7 @@ except Exception as e:  # pragma: no cover
         return JSONResponse(
             status_code=500,
             content={
-                "detail": "Backend bootstrap failed on Vercel.",
+                "detail": "Backend bootstrap failed on Vercel (frontend-root fallback).",
                 "error": bootstrap_error,
                 "path": path,
             },
