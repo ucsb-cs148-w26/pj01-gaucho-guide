@@ -48,6 +48,10 @@ def _normalize_text_content(content: Any) -> str:
 
 class VectorManager:
     def __init__(self, api_key):
+        if not api_key:
+            raise ValueError("Missing required env var: PINECONE_API_KEY")
+        if not PINECONE_INDEX_NAME:
+            raise ValueError("Missing required env var: PINECONE_INDEX_NAME")
         self.pc = Pinecone(api_key=api_key)
         self.embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL)
         self.llm = getLLM(provider="gemini", model_name=GEMINI_MODEL_NAME, temperature=0)

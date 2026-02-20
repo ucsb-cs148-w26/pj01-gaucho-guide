@@ -25,6 +25,16 @@ app.include_router(transcript.router)
 app.include_router(auth.router)
 
 
+@app.get("/")
+async def root():
+    return {
+        "ok": True,
+        "service": "gauchoguider-api",
+        "health": "/healthz",
+        "docs": "/docs",
+    }
+
+
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}

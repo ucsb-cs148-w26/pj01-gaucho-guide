@@ -1,4 +1,5 @@
 import os
+import traceback
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
@@ -193,8 +194,16 @@ REDDIT INGEST INFO:
 
     except Exception as e:
         print(f"Error processing chat request: {e}")
+        traceback.print_exc()
+        error_text = str(e)
+        if "PINECONE_INDEX_NAME" in error_text or "PINECONE_API_KEY" in error_text:
+            msg = "Backend misconfigured: missing Pinecone env vars on server."
+        elif "GOOGLE_API_KEY" in error_text:
+            msg = "Backend misconfigured: missing GOOGLE_API_KEY on server."
+        else:
+            msg = "Sorry, I'm having trouble accessing my brain (database) right now."
         return ChatResponseDTO(
-            response="Sorry, I'm having trouble accessing my brain (database) right now.",
+            response=msg,
             model_name=model_name,
         )
 
