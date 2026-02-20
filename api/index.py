@@ -1,5 +1,6 @@
 import os
 import sys
+from urllib.parse import parse_qs
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -18,9 +19,28 @@ try:
             self.inner_app = inner_app
             self.prefixes = ("/api/index", "/api/main", "/api", "/main")
 
+        def _path_from_forwarded_query(self, scope) -> str | None:
+            query_bytes = scope.get("query_string", b"")
+            if not query_bytes:
+                return None
+            parsed = parse_qs(query_bytes.decode("utf-8"), keep_blank_values=True)
+            forwarded = parsed.get("__path")
+            if not forwarded:
+                return None
+            raw = forwarded[0].strip("/")
+            return f"/{raw}" if raw else "/"
+
         async def __call__(self, scope, receive, send):
             if scope.get("type") == "http":
                 path = scope.get("path", "") or "/"
+                # When Vercel rewrites /api/:path* -> /api?__path=:path*,
+                # reconstruct the original subpath for FastAPI routing.
+                forwarded_path = self._path_from_forwarded_query(scope)
+                if forwarded_path is not None:
+                    scope = dict(scope)
+                    scope["path"] = forwarded_path
+                    await self.inner_app(scope, receive, send)
+                    return
                 for prefix in self.prefixes:
                     if path == prefix or path.startswith(prefix + "/"):
                         new_path = path[len(prefix):] or "/"
