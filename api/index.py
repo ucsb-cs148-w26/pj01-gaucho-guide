@@ -16,7 +16,7 @@ try:
     class PrefixNormalizingApp:
         def __init__(self, inner_app):
             self.inner_app = inner_app
-            self.prefixes = ("/api/index", "/api")
+            self.prefixes = ("/api/index", "/api/main", "/api", "/main")
 
         async def __call__(self, scope, receive, send):
             if scope.get("type") == "http":

@@ -7,14 +7,17 @@ try:
     class PrefixNormalizingApp:
         def __init__(self, inner_app):
             self.inner_app = inner_app
+            self.prefixes = ("/api/main", "/api", "/main")
 
         async def __call__(self, scope, receive, send):
             if scope.get("type") == "http":
                 path = scope.get("path", "") or "/"
-                if path == "/api" or path.startswith("/api/"):
-                    new_path = path[len("/api"):] or "/"
-                    scope = dict(scope)
-                    scope["path"] = new_path
+                for prefix in self.prefixes:
+                    if path == prefix or path.startswith(prefix + "/"):
+                        new_path = path[len(prefix):] or "/"
+                        scope = dict(scope)
+                        scope["path"] = new_path
+                        break
             await self.inner_app(scope, receive, send)
 
     app = PrefixNormalizingApp(imported_app)
@@ -32,4 +35,3 @@ except Exception as e:  # pragma: no cover
                 "path": path,
             },
         )
-
