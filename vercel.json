@@ -1,29 +1,11 @@
 {
-  "version": 2,
-  "builds": [
+  "installCommand": "cd chatbotWeb/chatBotWeb && npm ci --include=dev --no-audit --no-fund",
+  "buildCommand": "cd chatbotWeb/chatBotWeb && npm run build",
+  "outputDirectory": "chatbotWeb/chatBotWeb/dist",
+  "rewrites": [
     {
-      "src": "chatbotWeb/chatBotWeb/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(chat|rag|transcript|auth)(/.*)?",
-      "dest": "/api/index.py"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(chat|rag|transcript|auth)(.*)",
+      "destination": "/api/index.py"
     }
   ]
 }
