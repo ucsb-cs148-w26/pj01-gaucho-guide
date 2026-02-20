@@ -6,10 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
       "/chat": "http://localhost:8000",
       "/rag": "http://localhost:8000",
       "/transcript": "http://localhost:8000",
     },
   },
 });
-
