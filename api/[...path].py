@@ -32,3 +32,4 @@ except Exception as e:  # pragma: no cover
                 "path": path,
             },
         )
+
