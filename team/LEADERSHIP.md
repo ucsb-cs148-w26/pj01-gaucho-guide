@@ -13,14 +13,38 @@ This document records who has led or will lead key team activities, including pl
 
 
 
-Final Phase Role Assignments
-Role	Person
-Product Owner (Final Product)	Ria
-Scrum Master (Final Sprints)	Nick
-Testing / QA Coordinator	Samuel
-Retro 3 Leader (Week 9)	Wendy
-UX Coordinator	Anjali
-Design Document Coordinator	Krystelle
-Deployment Document Coordinator	Tej
-User Manual Coordinator	Samuel
-Final Presentation Leader	Krystelle
+## Previous Leadership Roles (Completed / Assigned)
+
+| Role | Person |
+|------|--------|
+| Initial Product Owner (MVP definition) | Tej |
+| First Sprint Planning Leader | Nick |
+| First Daily Scrum (Scrum Master) | Krystelle |
+| Second Daily Scrum | Wendy |
+| Learning Plan Discussion Leader | Ria |
+| Retro 1 Leader | Anjali |
+
+---
+
+## Final Phase Role Assignments
+
+| Role | Person |
+|------|--------|
+| Product Owner (Final Product) | Ria |
+| Scrum Master (Final Sprints) | Nick |
+| Testing / QA Coordinator | Samuel |
+| Retro 3 Leader (Week 9) | Wendy |
+| UX Coordinator | Anjali |
+| Design Document Coordinator | Krystelle |
+| Deployment Document Coordinator | Tej |
+| User Manual Coordinator | Samuel |
+| Final Presentation Leader | Krystelle |
+
+---
+
+## Notes
+
+- Product Owner and Scrum Master are different people.
+- Retro leaders are different across retros (Retro 1: Anjali, Retro 3: Wendy).
+- Roles are distributed so no one holds more than two roles.
+- The Design Document Coordinator is responsible for keeping this file updated.
