@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "/api/index?__path=healthz"
+    },
+    {
+      "source": "/ping",
+      "destination": "/api/index?__path=ping"
+    },
+    {
+      "source": "/chat/:path*",
+      "destination": "/api/index?__path=chat/:path*"
+    },
+    {
+      "source": "/transcript/:path*",
+      "destination": "/api/index?__path=transcript/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/index?__path=auth/:path*"
+    },
+    {
+      "source": "/rag/:path*",
+      "destination": "/api/index?__path=rag/:path*"
+    }
+  ]
+}
