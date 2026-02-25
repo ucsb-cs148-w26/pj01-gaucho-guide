@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.constants import START
+from langgraph.graph import StateGraph, MessagesState
+from langgraph.prebuilt import ToolNode, tools_condition
 
 from src.managers.session_manager import SessionManager
 from src.managers.firebase_chat_history_manager import FirebaseChatHistoryManager
@@ -11,8 +14,9 @@ from src.scrapers.reddit_scraper import extract_course_codes
 from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
+from src.agents.mermaid_agent import generate_mermaid_diagram
+from src.agents.mermaid_agent import GauchoState
 import json
-
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
@@ -31,6 +35,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 ENABLE_REVERSE_SEARCH = env_bool("ENABLE_REVERSE_SEARCH", False)
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
 
+
 def to_text(x):
     if isinstance(x, str):
         return x
@@ -47,6 +52,7 @@ def to_text(x):
         if joined:
             return joined
     return json.dumps(x, ensure_ascii=False)
+
 
 def history_to_messages(history):
     if not history:
@@ -93,9 +99,31 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
             temperature=0,
         )
         llm = base_llm
+
+        local_tools = [generate_mermaid_diagram]
+        model_tools = [generate_mermaid_diagram]
+
         if ENABLE_REVERSE_SEARCH:
-            # Gemini built-in Google Search tool for live verification beyond vector context.
-            llm = base_llm.bind_tools([{"google_search": {}}])
+            # Add Gemini's native search grounding ONLY to the model_tools
+            model_tools.append({"google_search": {}})
+
+        llm_with_tools = llm.bind_tools(model_tools)
+
+        async def call_model(state: MessagesState):
+            resp = await llm_with_tools.ainvoke(state["messages"])
+            return {"messages": [resp]}
+
+        workflow = StateGraph(MessagesState)
+
+        workflow.add_node("agent", call_model)
+        # FIX 1 (cont): Only pass the local Python tools to the ToolNode!
+        workflow.add_node("tools", ToolNode(local_tools))
+
+        workflow.add_edge(START, "agent")
+        workflow.add_conditional_edges("agent", tools_condition)
+        workflow.add_edge("tools", "agent")
+
+        gaucho_guide = workflow.compile()
 
         vector_manager = VectorManager(PINECONE_API_KEY)
         session_manager = SessionManager()
@@ -141,18 +169,7 @@ STUDENT TRANSCRIPT (use this to personalize recommendations — do NOT recommend
 
         system_prompt = SystemMessage(content=f"""
 You are GauchoGuider, an academic-focused UCSB advising assistant.
-
-RULES:
-1. Prioritize educational outcomes: course planning, prerequisites, degree progress, GPA strategy, study tactics, and graduation readiness.
-2. Use the student transcript (if provided) to personalize advice and avoid recommending courses the student already completed.
-3. Use the provided RAG context first. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
-4. If details are missing or uncertain, use reverse search to verify facts.
-5. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
-6. Keep answers practical and specific:
-   - Recommend concrete next steps.
-   - Call out constraints (prereqs, workload, sequence risk).
-   - When useful, suggest checking official UCSB sources (department pages, catalog, GOLD) for final confirmation.
-7. If the user asks about unrelated non-UCSB topics, briefly redirect back to UCSB academics.
+# ... [rest of your prompt] ...
 8. Tone: concise, supportive, and direct. Avoid filler and slang unless the user asks for a casual style.{transcript_section}
 """.strip())
 
@@ -173,12 +190,13 @@ REDDIT INGEST INFO:
 
         messages = [system_prompt] + history_msgs + [HumanMessage(content=rag_prompt)]
 
-        
-        response = await llm.ainvoke(messages)
+        final_state = await gaucho_guide.ainvoke({"messages": messages})
+
+        final_response_content = final_state["messages"][-1].content
 
         chat_session_id = str(request.chat_session_id)
         user_text_saved = to_text(user_text)
-        ai_text_saved = to_text(response.content)
+        ai_text_saved = to_text(final_response_content)
         session_manager.save_message(chat_session_id, "human", user_text_saved)
         session_manager.save_message(chat_session_id, "ai", ai_text_saved)
 
@@ -187,7 +205,7 @@ REDDIT INGEST INFO:
             firebase_history.save_message(user_email, chat_session_id, "ai", ai_text_saved)
 
         return ChatResponseDTO(
-            response=response.content,
+            response=final_response_content,  # Return the extracted text
             model_name=model_name,
         )
 
