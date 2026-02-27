@@ -12,8 +12,6 @@ Below is the high-level architecture diagram:
 
 ![System Architecture](./diagram.png)
 
-*(Place your diagram image in `/docs/architecture.png` or update the path if needed.)*
-
 ---
 
 ### Query & Response Flow (RAG)
