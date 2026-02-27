@@ -1,23 +1,162 @@
-Explanation
-The Gaucho Guider system is organized around three main flows: the user query and response pipeline, the data ingestion and indexing pipeline, and the chat history persistence layer.
-When a user submits a question through the client, the text of the query is first converted into a vector embedding using the Gemini embedding model. This embedding represents the semantic meaning of the question in a numerical form that can be used for similarity search. The embedding is then passed into the Retrieval-Augmented Generation (RAG) pipeline. In this step, the system performs a vector search in Pinecone to retrieve the most relevant document chunks from the indexed course data. These retrieved documents are combined with the original user query and sent to the language model to generate a response that is grounded in the retrieved sources. The generated answer is then returned to the user.
-The data that Pinecone searches over is produced by a separate ingestion pipeline under the /scrape workflow. This pipeline collects data from multiple sources, including RateMyProfessor, Reddit, and the UCSB catalog API. Each source is processed into a consistent format, split into smaller chunks, and embedded using the same Gemini embedding model so that both stored documents and user queries exist in the same vector space. These embeddings are then stored in Pinecone through the vector manager. Once stored, this data becomes available to the RAG pipeline for retrieval during user queries.
-Chat history is handled independently using Firebase. Each user interaction is stored so that conversations can be restored and multi-turn context can be maintained across sessions. This allows the system to preserve user state without mixing conversational data with the academic knowledge stored in Pinecone.
-This architecture separates responsibilities across components. The scraping and indexing pipeline is responsible for building and updating the knowledge base. The RAG pipeline is responsible for answering user questions using that knowledge. Firebase is responsible for storing user conversation history. This separation allows each part of the system to be updated or scaled without affecting the others.
+# GauchoGuider Design Document
 
-Decisions 
-Since the start of the project, the team has made several architectural and product decisions that shaped the current implementation of Gaucho Guider.
-One of the earliest decisions was selecting the database and storage strategy. We needed to support two different types of data: long-lived conversational state and a searchable knowledge base for retrieval. Based on this requirement, we chose Firebase for chat history because it provides simple real-time document storage, user-scoped data organization, and fast integration with the frontend. For semantic retrieval, we selected Pinecone as the vector database because it is optimized for similarity search, scales well for high-dimensional embeddings, and integrates cleanly with our embedding pipeline. This separation allowed us to keep user session data independent from academic content while optimizing each system for its specific workload.
-Another major decision was to incorporate the GOLDLens Chrome extension into the project instead of keeping Gaucho Guider as a standalone interface. Through team discussions, we determined that embedding the system directly into the UCSB GOLD workflow would significantly improve usability and adoption. This shifted the product from being a separate tool that students would have to open manually to a contextual assistant that appears at the moment students are choosing courses. As a result, the backend APIs and authentication flow were designed to support both the web client and the extension.
-We also made deliberate branding and design decisions to give the project a distinct identity. The team agreed that the interface should feel approachable and memorable rather than looking like a generic chatbot. This led to the creation of a custom icon and visual theme, including the raccoon riding a horse, which reflects the UCSB mascot and gives the system a recognizable personality. This decision influenced the color palette, typography, and overall UI consistency across the extension and web interface.
-For the /scrape pipeline, we decided to implement a unified ingestion workflow that aggregates data from RateMyProfessor, Reddit, and the UCSB catalog API into a single normalized format before embedding and indexing. This approach was chosen instead of embedding each source independently at query time because it reduces latency, ensures consistent chunking and preprocessing, and allows the knowledge base to be refreshed on a controlled schedule. We also standardized the embedding model used during scraping and querying to ensure that all vectors exist in the same semantic space.
-On the frontend, the team agreed to prioritize a clean, modern layout that emphasizes readability and fast interaction. We chose a component-based design with a consistent design system so that the chat interface, course context panels, and extension overlay all share the same visual language. This decision was driven by the goal of making the system feel integrated into the student workflow rather than appearing as a separate tool.
-These decisions were made iteratively and are documented in our GitHub meeting logs, where we evaluated trade-offs between simplicity, scalability, performance, and user experience before finalizing each approach.
-UX
-—
+## System Architecture Overview
 
-The UX design for Gaucho Guider focuses primarily on the standalone web application, with the goal of making course discovery and planning faster, clearer, and more conversational than traditional tools. The main objective is to let students ask natural-language questions about courses and immediately receive grounded, easy-to-understand answers without needing to manually compare multiple websites or data sources. While the GOLDLens extension exists as a complementary entry point on the UCSB GOLD site, the core user experience is centered on the web interface.
-At a high level, the user flow begins when a student opens the Gaucho Guider website and starts a new or existing chat session. The interface presents a clean, single-purpose layout that directs attention to the input area and the conversation history. The user asks a question about a course, instructor, workload, grading, or recommendations. The system processes the query and returns a response that is structured for quick reading, allowing the user to understand the key points without needing to interpret raw data.
-The chat-based interaction model was chosen so users can refine their questions naturally through follow-up prompts instead of restarting their search each time. Conversation history is persisted, which allows students to leave and return later without losing context. This supports longer-term planning, such as comparing multiple courses over time or revisiting earlier decisions.
-Information is presented in a way that prioritizes clarity and scannability. Responses are formatted so that users can quickly extract actionable insights, while still having access to deeper context when needed. The visual design emphasizes a modern, approachable interface with consistent branding, making the system feel like a dedicated academic planning tool rather than a generic chatbot.
-The GOLDLens extension acts as a secondary access point by allowing users to open Gaucho Guider while browsing the UCSB GOLD website. However, it is not required for the primary workflow. Instead, it provides contextual convenience by linking the same question-answering experience to the moment when students are viewing specific courses.
+The GauchoGuider system is organized into three main subsystems:
+
+1. User Query & Response Pipeline (RAG)
+2. Data Ingestion and Indexing Pipeline
+3. Chat History Persistence Layer
+
+Below is the high-level architecture diagram:
+
+![System Architecture](./architecture.png)
+
+*(Place your diagram image in `/docs/architecture.png` or update the path if needed.)*
+
+---
+
+### Query & Response Flow (RAG)
+
+1. A user submits a question through the web app or GOLDLens extension.
+2. The query is converted into a vector embedding using the **Gemini embedding model**.
+3. The embedding is used to perform a similarity search in **Pinecone**.
+4. Relevant document chunks (courses, reviews, discussions) are retrieved.
+5. The retrieved context and original query are sent to the language model.
+6. The model generates a grounded response and returns it to the user.
+
+This Retrieval-Augmented Generation (RAG) approach ensures responses are based on real UCSB data rather than relying only on model knowledge.
+
+---
+
+### Data Ingestion Pipeline
+
+The knowledge base stored in Pinecone is built through a separate `/scrape` workflow.
+
+Data sources:
+- RateMyProfessor (RMP)
+- Reddit
+- UCSB Course Catalog API
+
+Processing steps:
+1. Scrape raw data
+2. Normalize into a unified format
+3. Split into smaller chunks
+4. Generate embeddings using Gemini
+5. Store vectors in **Pinecone** via the vector manager
+
+Preprocessing and indexing data ahead of time reduces query latency and ensures consistent formatting across sources.
+
+---
+
+### Chat History Persistence
+
+Conversation history is stored separately in **Firebase**.
+
+Each interaction is saved per user to:
+- Restore previous conversations
+- Support multi-turn context
+- Allow long-term course planning sessions
+
+This separation keeps:
+- **Pinecone** → academic knowledge
+- **Firebase** → user state
+
+This allows each system to scale independently.
+
+---
+
+## Key Design Decisions
+
+### Separate Storage Systems
+
+We needed to support two different types of data:
+
+- Semantic knowledge for retrieval → **Pinecone**
+- User conversations and session state → **Firebase**
+
+This separation allows each system to be optimized for its specific workload and keeps user data isolated from academic content.
+
+---
+
+### Consistent Embedding Strategy
+
+We use the same **Gemini embedding model** for:
+- Scraped documents
+- User queries
+
+This ensures all vectors exist in the same semantic space and improves retrieval accuracy.
+
+---
+
+### Unified Scrape Pipeline
+
+Instead of querying external sources at runtime, we aggregate data into a single normalized format and index it ahead of time.
+
+Benefits:
+- Faster response times
+- Consistent chunking and preprocessing
+- Controlled refresh schedule
+
+---
+
+### GOLDLens Integration
+
+The team decided to integrate GauchoGuider into a Chrome extension for UCSB GOLD.
+
+This decision shifted the product from a standalone tool to a contextual assistant available during course selection. The backend APIs were designed to support both the web app and the extension.
+
+---
+
+### Branding and UI Identity
+
+The team created a distinct visual identity to make the system approachable and recognizable. Design decisions around color, typography, and layout were made to ensure consistency across the web interface and extension.
+
+All major decisions were discussed during team meetings and documented in GitHub meeting logs, where tradeoffs between simplicity, scalability, performance, and usability were evaluated.
+
+---
+
+## User Experience (UX)
+
+### Design Goals
+
+- Allow natural-language course exploration
+- Provide fast, readable answers
+- Support ongoing, multi-session planning
+
+The primary experience is the standalone web application, with GOLDLens as a secondary entry point.
+
+---
+
+### High-Level User Flow
+
+1. User opens GauchoGuider
+2. Starts a new or existing chat session
+3. Asks a question (course difficulty, professor quality, recommendations, etc.)
+4. The system returns a structured, easy-to-scan response
+5. The user refines their question with follow-ups
+6. Conversation history is saved in Firebase
+
+This conversational model allows users to refine decisions over time instead of repeatedly searching multiple websites.
+
+---
+
+### Information Presentation
+
+The interface is designed to prioritize clarity and scannability:
+
+- Clean, single-focus layout
+- Emphasis on conversation history
+- Responses formatted for quick understanding
+- Persistent sessions for long-term planning
+
+The GOLDLens extension provides contextual access while browsing courses, but the web app supports the primary workflow.
+
+---
+
+## Future UX Considerations
+
+- Improve response latency
+- Expand data coverage from Reddit and RateMyProfessor
+- Surface source transparency for retrieved information
+- Add course comparison and planning features
