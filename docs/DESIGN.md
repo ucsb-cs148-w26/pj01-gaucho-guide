@@ -10,7 +10,7 @@ The GauchoGuider system is organized into three main subsystems:
 
 Below is the high-level architecture diagram:
 
-![System Architecture](./architecture.png)
+![System Architecture](./diagram.png)
 
 *(Place your diagram image in `/docs/architecture.png` or update the path if needed.)*
 
