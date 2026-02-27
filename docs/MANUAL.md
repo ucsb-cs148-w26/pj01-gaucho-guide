@@ -9,15 +9,15 @@ Choosing classes, tracking degree requirements, and comparing course options can
 
 This product is intended for:
 
-UCSB undergraduate students
+* UCSB undergraduate students
 
-Transfer students
+* Transfer students
 
-Students planning multi-year schedules
+* Students planning multi-year schedules
 
-Students on specialized tracks (such as pre-med, pre-law, or other professional paths)
+* Students on specialized tracks (such as pre-med, pre-law, or other professional paths)
 
-Anyone who wants help understanding requirements, prerequisites, and course options
+* Anyone who wants help understanding requirements, prerequisites, and course options
 
 No technical knowledge is required to use this tool.
 
@@ -29,55 +29,29 @@ Gaucho Guider provides tools to help you plan your classes, understand your requ
 
 The Chatbot Assistant lets you ask questions and receive personalized planning help. You can use it to:
 
-Ask about degree or major requirements
+* Ask about degree or major requirements
 
-See which requirements you have completed and which are still remaining
+* See which requirements you have completed and which are still remaining
 
-Explore course options that fit your academic path
+* Explore course options that fit your academic path
 
-Generate possible schedules based on your preferred unit load and workload
+* Generate possible schedules based on your preferred unit load and workload
 
-Get guidance tailored to your goals (such as graduation timelines or professional tracks)
+* Get guidance tailored to your goals (such as graduation timelines or professional tracks)
 
-Simply type your questions or planning needs into the chat, and the assistant will guide you step-by-step.
-
-## Login
-
-The web interface allows students to:
-
-View and organize course information
-
-Plan future quarters
-
-Map out a multi-year academic path
-
-Compare different scheduling options
-
-GOLD Lens Browser Extension
-
-While browsing the UCSB course registration site, students can:
-
-Hover over courses to see extra details
-
-View general course difficulty or rigor
-
-See grade distribution data
-
-View instructor ratings
-
-Access helpful context without switching tabs
+* Simply type your questions or planning needs into the chat, and the assistant will guide you step-by-step.
 
 ## History
 
 The History feature keeps track of your past interactions and planning activity so you can easily revisit previous information. You can:
 
-Review earlier chatbot conversations
+* Review earlier chatbot conversations
 
-See schedules or plans you created before
+* See schedules or plans you created before
 
-Compare past and current options
+* Compare past and current options
 
-Continue planning without starting over
+* Continue planning without starting over
 
 This helps you stay organized and saves time when making updates to your schedule.
 
@@ -87,7 +61,7 @@ Do I need a UCSB email to access Gaucho Guider?
 
 Yes. You must have a valid @ucsb.edu from University of California, Santa Barbara to use Gaucho Guider.
 
-Troubleshooting
+# Troubleshooting
 
 (Details coming soon)
 
