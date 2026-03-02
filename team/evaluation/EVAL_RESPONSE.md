@@ -1,75 +1,69 @@
-# Overall Response to Reviewer Feedback
+# Team Evaluation Response
 
-Below is our combined response to each section of the review form, along with concrete actions we plan to take as a team.
-
----
-
-### 1. Feedback Based on USER_FEEDBACK_NEEDS.md (Custom Metrics)
-
-The reviewers’ comments directly touched on **Perceived Trustworthiness**, which is one of our core supporting metrics. The suggestion to include citations or links to official UCSB sources (and even Reddit threads) confirms that trust is not just about correctness, but about transparency.
-
-**Actions we’ll take:**
-- Add lightweight source links when answers reference official UCSB policies, requirements, or course info.
-- Explore clearly labeling informal sources (e.g., “based on student discussion”) versus official ones.
-- Use this to improve trust scores without making responses too long or heavy.
+This response summarizes how we, as a team, are reacting to the feedback from the reviewers. We looked at all comments together on our Kanban Board and used them to decide what changes matter most right now versus what we see as future or stretch improvements.
 
 ---
 
-### 2. Understanding of Product Features (and Likes / Improvements)
+## 1. Response to Feedback on USER_FEEDBACK_NEEDS.md
 
-The reviewers clearly understood Gaucho Guider as an academic planning chatbot and reacted positively to the overall idea and feature set. The Chrome extension stood out as something they were excited about, even though it is not fully live yet.
+Overall, the feedback we received lines up well with the goals in our USER_FEEDBACK_NEEDS.md. Reviewers were able to ask real academic questions and generally found the answers helpful, which supports our North Star Metric around Academic Question Resolution.
 
-They also pointed out small but real issues, like the profile username being stuck at `student@ucsb.edu`, which affects how “real” the product feels.
+One clear takeaway is that **trust and clarity** matter just as much as correctness. Feedback about adding citations, reducing overconfidence, and fixing small UI issues directly connects to our *Perceived Trustworthiness* and *Answer Clarity* metrics. Based on this, we are deciding to:
 
-**Actions we’ll take:**
-- Fix the profile username so it reflects the actual user and can be edited.
-- Keep the Chrome extension as a high-priority feature since it clearly resonated.
-- Continue sanity-checking that the core purpose (course planning help) is obvious to first-time users.
+- Adjust chatbot responses to clearly state when information is based on general knowledge versus official UCSB sources.
+- Explore adding lightweight citations or links (e.g., GOLD, department pages, or even Reddit threads when appropriate) to improve trust.
+- Tune response length and wording so answers feel helpful without sounding overly confident or robotic.
 
----
-
-### 3. Effectiveness of the Product in Its Current State (UI/UX + Robustness)
-
-Feedback here was mostly positive. One reviewer mentioned not encountering errors or inaccurate information, which supports our **Academic Question Resolution Rate** goal. That said, UI details like chat bar spacing and the top bar separation stood out as areas that slightly hurt the experience.
-
-**Actions we’ll take:**
-- Adjust chat input positioning so it feels more natural and closer to the bottom.
-- Add clearer visual separation between the top bar and the main chat area.
-- Continue testing edge cases to make sure the app stays stable as we add features.
+These decisions reinforce our goal of making answers students would actually use for real course decisions.
 
 ---
 
-### 4. Helpfulness of Deployment Instructions
+## 2. Additional Decisions Based on Reviewer Feedback
 
-The reviewers did not report any confusion or blockers during deployment. Based on that, we believe our `DEPLOYMENT.md` file was clear, straightforward, and easy to follow. Since no issues were brought up, the instructions appear to be doing their job at this stage.
+### Section 2: Product Features as Understood by Reviewers
 
-**Actions we’ll take:**
-- Keep the structure and clarity of the current `DEPLOYMENT.md`.
-- As we add more features, make sure the instructions stay just as simple and direct.
+Reviewers clearly understood and appreciated the Chrome extension and transcript-related features. This tells us our core idea is coming across well.
 
----
-
-### 5. Final Closing Thoughts from the Reviewers
-
-What they liked most:
-- Overall look and feel of the site
-- The Chrome extension concept
-- Stability and lack of obvious errors
-
-Most impactful improvement opportunity:
-- Increasing trust through sources and verification
-- Small UI polish issues that affect first impressions
-
-One more positive note:
-- The app already feels solid and usable, even at this early stage
-
-**Actions we’ll take:**
-- Prioritize trust and UI polish before adding major new features.
-- Add basic email verification checks to ensure only valid UCSB emails are used.
-- Keep focusing on clarity, usefulness, and honesty in responses rather than trying to sound overly confident.
+**Decisions:**
+- Prioritize fixing transcript logic so current classes are handled correctly, especially when prerequisites are involved.
+- Improve how the chatbot reasons about past vs. in-progress courses to avoid incorrect assumptions.
+- Keep the Chrome extension as a core feature and continue treating it as a major value add.
 
 ---
 
-### Closing
+### Section 3: Effectiveness, Robustness, and UI/UX
 
-This feedback confirms that Gaucho Guider is already helpful, but also highlights clear, actionable ways to improve it. Our next steps will focus on increasing trust, polishing the UI, and tightening the overall user experience, while continuing to measure success using our defined metrics.
+Several reviewers mentioned long loading times and small UI layout issues (chat bar positioning, top bar separation).
+
+**Decisions:**
+- Investigate backend and API response times to reduce loading delays, since this directly affects *Time to First Useful Answer*.
+- Make small but meaningful UI adjustments to the chat bar spacing and top bar separation to make the interface feel more polished.
+- Treat UI fixes as short-term improvements since they are relatively low effort but high impact.
+
+---
+
+### Section 4: Helpfulness of Deployment Instructions and Repo Organization
+
+The reviewers did not run into any blockers during deployment, which is good. That said, we want to make sure the repo stays easy to navigate as the project grows, not just right now. The Kanban board and README were not flagged as confusing, but we think there is still room to make things clearer, especially for someone coming in fresh.
+
+**Decisions:**
+
+- Review the README to make sure it gives a clear picture of what the project is and how everything fits together, not just how to run it.
+- Keep the Kanban board organized and up to date so it actually reflects what we're working on.
+- As we add features, update DEPLOYMENT.md so the instructions stay simple and accurate.
+---
+
+### Section 5: Final Closing Thoughts from Reviewers
+
+Reviewers consistently highlighted the Chrome extension as a strong point and mentioned that the app felt solid overall, with no major errors.
+
+**Decisions:**
+- Lean into the Chrome extension as a standout feature during demos.
+- Address the most impactful issues raised: trust signals (citations), transcript edge cases, and loading time.
+- Treat email verification and profile editing (username changes) as stretch goals, since they improve polish but are not critical to core functionality right now.
+
+---
+
+## Summary
+
+As a team, we feel encouraged by the feedback. The product is already useful, but the biggest opportunities for improvement are around trust, performance, and small UX details. Our next steps focus on making the chatbot feel more reliable and faster, while keeping the features reviewers already liked intact.
