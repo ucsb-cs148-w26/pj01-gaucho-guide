@@ -34,3 +34,17 @@ Anjali
 Ria
 
 Tej
+
+I contributed to the architecture, backend development, and deployment of the Gaucho Guider system.
+
+A major portion of my work involved integrating the Reddit data pipeline into the project’s retrieval-augmented generation (RAG) system. I incorporated the Reddit scraper developed by Ria into the ingestion workflow and configured the vector database infrastructure using Pinecone to store and query embeddings generated from the scraped course discussion data.
+
+I was also responsible for deploying the full application stack and ensuring that the system could run reliably in a production environment. This included configuring the backend services, managing environment setup, and integrating the different components of the pipeline so that the frontend chatbot interface could communicate effectively with the retrieval system.
+
+Another contribution was integrating the chatbot functionality with the Gold Lens interface so that users could access Gaucho Guider directly through the UCSB course review environment. This required coordinating the interaction between the UI layer and the backend RAG system.
+
+During development I also migrated the embedding workflow from Ollama to Google’s Gemini embedding model. This change improved embedding generation reliability and allowed us to simplify parts of the infrastructure while maintaining consistent retrieval performance.
+
+Additionally, I implemented the UCSB course API scraper that collects official course information and feeds it into the system’s knowledge base. This allowed Gaucho Guider to combine structured course metadata with unstructured student discussion data from Reddit.
+
+Beyond individual features, I helped guide several technical and architectural decisions throughout the project. I led discussions around the design of the RAG pipeline, model selection, and the overall system integration strategy to ensure the different components of the project worked together cohesively.
