@@ -27,7 +27,21 @@ Nick
 
 Samuel
 
-Krystelle
+
+## Krystelle:
+
+**Code Contributions:**  
+I primarily worked on the frontend design: 
+-Editable profile page and connected OAuth
+-Frontend layout and CSS styling
+
+
+**Non-Coding Contributions:**  
+* Worked with Wendy on the initial frontend design
+* Collaborated with the team and designed the UCSB mascot logo
+
+**Notes on GitHub Contributors Graph**
+The contributor graph shows what I contributed and can be see within the frontend layout. Although, the amount of commit counts does not accurately show everyone’s contributions. For me, I primarily worked  by giving my implementation and creative ideas with the frontend and OAuth outside of commits.
 
 Anjali
 
