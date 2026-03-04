@@ -31,7 +31,25 @@ Krystelle
 
 Anjali
 
-Ria
+### Ria
+
+Code Contributions:
+
+I primarily worked on building the Reddit data ingestion pipeline and assisting with backend database integration. Some of the main contributions I made include:
+
+* Implemented the Reddit scraping workflow to collect course-related discussions from relevant subreddits.
+* Processed and structured scraped Reddit data so it could be used in the ingestion pipeline.
+* Helped prepare Reddit data for embedding and indexing so it could be retrieved through the RAG system.
+* Assisted with integrating and organizing data within the Firebase database to support the chatbot backend.
+
+Non-Coding Contributions:
+
+* Participated in sprint planning, standups, and retrospectives throughout the quarter.
+* Helped review team documentation and contributed to organizing project structure.
+
+Notes on GitHub Contributors Graph:
+
+The contributor graph reflects some of the coding work I contributed, particularly related to the Reddit scraping pipeline and backend support. Overall, while commit counts show some activity, they do not fully capture the collaborative work involved in backend integration, data preparation, and testing that helped the system function end-to-end.
 
 Tej
 
