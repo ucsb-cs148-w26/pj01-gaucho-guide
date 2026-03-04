@@ -25,6 +25,22 @@ Overall, the graph shows a good picture of my contributions, but it doesn’t te
 
 Nick 
 
+## Nick 
+
+**Code Contributions:**
+-I created an initial frontend of the chatbot for proof of concept with just a chatbox before Wendy and Krystelle went off and made it look much more production ready.
+-I utilized a pytho library to scrape a pdf, for students to send in their transcript as context for the chatbot, and the chatbot accurately turns that transcript into a json file to base future classes off of.
+
+**Non-Coding Contributions:**  
+In the first couple weeks, I was the scribe for the scrums and sprint meetings, keeping things documented in the github, until that got passed off.
+
+**Notes on GitHub Contributors Graph:**
+The graph is accurate for me, as I had a couple big tasks that got implemented in a couple commits in the backend, as well as being the first to push a working React frontend, which shows in the amount of lines I added. 
+
+For others, the github contributors graph isn't so accurate. Anjali and Krystelle, although with a low commit count, worked tirelessly on the Oauth page and the profile page, not much code, but essential to the project.
+Samuel and Tej did a lot of work on the Backend, specifically with the APIS, scrapers, and Tej made sure the project connected from top to bottom before the second code freeze.
+Ria and Wendy's contributions are accurately shown in the graph.
+Every team member contributed meaningfully to coding, testing, planning, and design.
 Samuel
 
 
