@@ -51,7 +51,7 @@ Notes on GitHub Contributors Graph:
 
 The contributor graph reflects some of the coding work I contributed, particularly related to the Reddit scraping pipeline and backend support. Overall, while commit counts show some activity, they do not fully capture the collaborative work involved in backend integration, data preparation, and testing that helped the system function end-to-end.
 
-Tej
+### Tej
 
 I contributed to the architecture, backend development, and deployment of the Gaucho Guider system.
 
