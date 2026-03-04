@@ -23,8 +23,6 @@ However, the graph doesn’t fully capture all contributions from some of my tea
 
 Overall, the graph shows a good picture of my contributions, but it doesn’t tell the full story for everyone. Every team member contributed meaningfully to coding, testing, planning, and design.
 
-Nick 
-
 ## Nick 
 
 **Code Contributions:**
@@ -41,8 +39,6 @@ For others, the github contributors graph isn't so accurate. Anjali and Krystell
 Samuel and Tej did a lot of work on the Backend, specifically with the APIS, scrapers, and Tej made sure the project connected from top to bottom before the second code freeze.
 Ria and Wendy's contributions are accurately shown in the graph.
 Every team member contributed meaningfully to coding, testing, planning, and design.
-Samuel
-
 
 ## Krystelle:
 
