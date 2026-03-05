@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from backend.src.api import chat, rag, transcript
-from src.api import chat, rag, auth
+from src.api import chat, rag, transcript, auth
 
 app = FastAPI()
 

@@ -1,0 +1,42 @@
+query ListAllCourses @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  courses {
+    id
+    title
+    courseCode
+    units
+    quarterOffered
+    geAreas
+  }
+}
+
+query GetStudentProfile($studentId: UUID!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  student(key: {id: $studentId}) {
+    id
+    displayName
+    email
+    major
+    year
+    photoUrl
+  }
+}
+
+mutation EnrollStudentInCourse($studentId: UUID!, $courseId: UUID!, $notes: String) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  studentCourse_insert(data: {
+    studentId: $studentId,
+    courseId: $courseId,
+    notes: $notes,
+    createdAt_expr: "request.time"
+  })
+}
+
+mutation CreateNewProfessor($firstName: String!, $lastName: String!, $department: String!, $email: String, $officeHours: String, $researchInterests: [String!]) @auth(expr: "auth.token.admin == true") {
+  professor_insert(data: {
+    firstName: $firstName,
+    lastName: $lastName,
+    department: $department,
+    email: $email,
+    officeHours: $officeHours,
+    researchInterests: $researchInterests,
+    createdAt_expr: "request.time"
+  })
+}

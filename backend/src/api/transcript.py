@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.src.managers.session_manager import SessionManager
-from backend.src.scrapers.transcript_scraper import parse_transcript
+from src.managers.session_manager import SessionManager
+from src.scrapers.transcript_scraper import parse_transcript
 
 router = APIRouter(prefix="/transcript", tags=["transcript"])
 

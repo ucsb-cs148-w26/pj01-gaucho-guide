@@ -9,15 +9,7 @@ const IconMessage = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 );
 
-function Sidebar({ isOpen, onNewChat }) {
-// Dummy Data for History (You would eventually fetch this from a database)
-    const history = [
-        "Grade requirements for CS...",
-        "How do I switch majors?",
-        "Unofficial Transcript help",
-        "Gaucho Guider settings",
-        "Physics 101 Prerequisites"
-  ];
+function Sidebar({ isOpen, onNewChat, sessions = [], onSelectSession }) {
   return (
     <div className={`sidebar ${isOpen ? "open" : ""}`}>
       <div className="sidebar-header">
@@ -28,9 +20,14 @@ function Sidebar({ isOpen, onNewChat }) {
       <div className="sidebar-content">
         <div className="history-label">Recent</div>
         <ul>
-          {history.map((item, index) => (
-            <li key={index} className="history-item">
-              <IconMessage /> <span>{item}</span>
+          {sessions.map((item) => (
+            <li
+              key={item.chat_session_id}
+              className="history-item"
+              onClick={() => onSelectSession?.(item.chat_session_id)}
+              title={item.title}
+            >
+              <IconMessage /> <span>{item.title || "Untitled Chat"}</span>
             </li>
           ))}
         </ul>

@@ -1,32 +1,112 @@
-import React from 'react';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import "./SignIn.css";
 
 const SignIn = () => {
-  const handleSignIn = () => {
-    window.location.href = 'http://localhost:8000/auth/login';
+  const { signInWithEmail, signUpWithEmail, authEnabled } = useAuth();
+
+  const [mode, setMode] = useState("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    setError("");
+    setLoading(true);
+
+    try {
+      if (mode === "signup") {
+        await signUpWithEmail(email, password, name);
+      } else {
+        await signInWithEmail(email, password);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="signin-page">
-      <div className="header">
-        <h1>Gaucho Guider</h1>
-      </div>
+    <div className="signin-container">
+      <div className="signin-card">
+        <div className="signin-header">
+          <h1 className="signin-title">GauchoGuide</h1>
+          <p className="signin-subtitle">UCSB Academic Companion</p>
+        </div>
 
-      <div className="signin-center">
-        <div className="signin-card">
-          <h2 className="signin-title">GauchoGuide</h2>
-          <p className="signin-subtitle">Your UCSB Campus Companion</p>
+        <div className="signin-content">
+          <div className="signin-message">
+            <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
+            <p>Use your UCSB email to access chat and history.</p>
+          </div>
 
-          <p className="signin-message">
-            Sign in with your UCSB account to get started
-          </p>
+          {!authEnabled && (
+            <div className="signin-error">
+              Firebase auth is not configured. Add `VITE_FIREBASE_*` vars.
+            </div>
+          )}
 
-          <button className="google-signin-btn" onClick={handleSignIn}>
-            Sign in with Google
+          <form className="signin-form" onSubmit={onSubmit}>
+            {mode === "signup" && (
+              <input
+                className="signin-input"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full name"
+              />
+            )}
+
+            <input
+              className="signin-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@ucsb.edu"
+              required
+            />
+
+            <input
+              className="signin-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              minLength={6}
+              required
+            />
+
+            {error && <div className="signin-error">{error}</div>}
+
+            <button className="signin-btn" type="submit" disabled={loading || !authEnabled}>
+              {loading ? "Please wait..." : mode === "signup" ? "Create Account" : "Sign In"}
+            </button>
+          </form>
+
+          <button
+            className="signin-toggle"
+            type="button"
+            onClick={() => {
+              setError("");
+              setMode((m) => (m === "signup" ? "signin" : "signup"));
+            }}
+          >
+            {mode === "signup"
+              ? "Already have an account? Sign in"
+              : "Need an account? Sign up"}
           </button>
 
-          <p className="signin-notice">
-            Only <strong>@ucsb.edu</strong> email addresses are permitted
-          </p>
+          <div className="signin-notice">
+            <p>
+              <strong>Restriction:</strong> only `@ucsb.edu` emails are allowed.
+            </p>
+          </div>
         </div>
       </div>
     </div>

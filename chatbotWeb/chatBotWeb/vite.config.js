@@ -8,8 +8,8 @@ export default defineConfig({
     proxy: {
       "/chat": "http://localhost:8000",
       "/rag": "http://localhost:8000",
+      "/transcript": "http://localhost:8000",
     },
   },
 });
-
 

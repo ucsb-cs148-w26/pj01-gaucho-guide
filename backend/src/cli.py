@@ -1,20 +1,41 @@
 import os
 import concurrent.futures
+import json
 
 import click
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
-from langchain_ollama import ChatOllama
 
-from backend.src.managers.session_manager import SessionManager
-from backend.src.managers.vector_manager import VectorManager
-from backend.src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
+from src.llm.llmswap import getLLM
+from src.managers.session_manager import SessionManager
+from src.managers.vector_manager import VectorManager
+from src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
+from src.scrapers.reddit_scraper import fetch_reddit_docs_for_cmpsc_catalog
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME")
+MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
 UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
+REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
+
+
+def normalize_response_content(content):
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        text_chunks = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text_chunks.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                text_chunks.append(item)
+        joined = "\n".join(chunk for chunk in text_chunks if chunk).strip()
+        if joined:
+            return joined
+
+    return json.dumps(content, ensure_ascii=False)
 
 
 def select_session(session_manager: SessionManager):
@@ -78,7 +99,7 @@ def start():
     print_logo()
 
     try:
-        llm = ChatOllama(model=MODEL_NAME, temperature=0)  # Keep temperature low to avoid hallucinations
+        llm = getLLM(provider="gemini", model_name=MODEL_NAME, temperature=0)
         vector_manager = VectorManager(PINECONE_API_KEY)
         session_manager = SessionManager()
     except Exception as e:
@@ -107,7 +128,7 @@ def start():
     """)
 
     click.secho(
-        "\n[GauchoGuider]: Type '/scrape' to update my knowledge base or just ask a question!",
+        "\n[GauchoGuider]: Type '/scrape' (RMP) or '/reddit' (Reddit corpus) to update knowledge, or just ask a question!",
         fg="cyan")
 
     while True:
@@ -139,6 +160,26 @@ def start():
                     vector_manager.ingest_data(school_reviews, "school_reviews")
                 if professors:
                     vector_manager.ingest_data(professors, "professor_data")
+                click.secho("RMP scrape complete.", fg="green")
+                continue
+
+            if user_input.lower() == '/reddit':
+                click.secho("Scraping broad CMPSC Reddit corpus...", fg="yellow")
+                try:
+                    reddit_docs, discovered_codes = fetch_reddit_docs_for_cmpsc_catalog()
+                except Exception as e:
+                    click.secho(f"Error fetching Reddit corpus: {e}", fg="red")
+                    reddit_docs, discovered_codes = None, []
+
+                if reddit_docs:
+                    vector_manager.ingest_data(reddit_docs, REDDIT_CLASS_NAMESPACE)
+                    click.secho(
+                        f"Reddit ingest complete: {len(reddit_docs)} docs across "
+                        f"{len(discovered_codes)} CMPSC course codes.",
+                        fg="green",
+                    )
+                else:
+                    click.secho("No Reddit docs found for current CMPSC harvest settings.", fg="yellow")
                 continue
 
             # --- RAG Logic ---
@@ -157,7 +198,7 @@ def start():
             # click.secho(context_text, fg="yellow", bold=True)
             messages = [system_prompt] + history + [HumanMessage(content=rag_prompt)]
             response = llm.invoke(messages)
-            response_content = response.content
+            response_content = normalize_response_content(response.content)
 
             click.secho(f"[GauchoGuider]: {response_content}", fg="cyan")
 

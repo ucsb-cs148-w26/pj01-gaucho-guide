@@ -1,0 +1,8 @@
+connectorId: example
+generate:
+  javascriptSdk:
+    - outputDir: ../../chatbotWeb/chatBotWeb/src/dataconnect-generated
+      package: "@dataconnect/generated"
+      packageJsonDir: ../../chatbotWeb/chatBotWeb
+      react: true
+      angular: false

@@ -38,15 +38,44 @@ import os
 import re
 import tempfile
 
-import pymupdf4llm
+try:
+    import pymupdf4llm
+except Exception:
+    pymupdf4llm = None
+
+try:
+    from pypdf import PdfReader
+except Exception:
+    PdfReader = None
 
 
 def _pdf_to_markdown(pdf_bytes: bytes) -> str:
+    # Preferred extractor for best layout fidelity.
+    if pymupdf4llm is not None:
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        try:
+            tmp.write(pdf_bytes)
+            tmp.close()
+            return pymupdf4llm.to_markdown(tmp.name)
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
+
+    # Lightweight fallback for serverless deployments.
+    if PdfReader is None:
+        raise RuntimeError("No PDF parser available. Install pymupdf4llm or pypdf.")
+
     tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
     try:
         tmp.write(pdf_bytes)
         tmp.close()
-        return pymupdf4llm.to_markdown(tmp.name)
+        reader = PdfReader(tmp.name)
+        pages = []
+        for page in reader.pages:
+            pages.append(page.extract_text() or "")
+        return "\n\n".join(pages)
     finally:
         try:
             os.unlink(tmp.name)
