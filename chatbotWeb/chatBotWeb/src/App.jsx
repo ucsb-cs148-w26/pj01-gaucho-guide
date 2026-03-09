@@ -186,6 +186,52 @@ function App() {
         return <span key={idx} className="assistant-line assistant-break" />;
       }
 
+      const imageMatch = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (imageMatch) {
+        const altText = imageMatch[1] || "Generated image";
+        const imageUrl = imageMatch[2];
+        return (
+          <span key={idx} className="assistant-line assistant-image-wrap">
+            <a href={imageUrl} target="_blank" rel="noreferrer">
+              <img src={imageUrl} alt={altText} className="assistant-image" />
+            </a>
+            <a
+              href={imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="assistant-image-link"
+            >
+              Open image
+            </a>
+          </span>
+        );
+      }
+
+      const markdownLinkMatch = line.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (markdownLinkMatch) {
+        const label = markdownLinkMatch[1];
+        const url = markdownLinkMatch[2];
+        return (
+          <span key={idx} className="assistant-line">
+            <a href={url} target="_blank" rel="noreferrer">
+              {label}
+            </a>
+          </span>
+        );
+      }
+
+      const bareUrlMatch = line.match(/^(https?:\/\/\S+)$/);
+      if (bareUrlMatch) {
+        const url = bareUrlMatch[1];
+        return (
+          <span key={idx} className="assistant-line">
+            <a href={url} target="_blank" rel="noreferrer">
+              {url}
+            </a>
+          </span>
+        );
+      }
+
       const headingMatch = line.match(/^#{1,6}\s*(.+)$/);
       if (headingMatch) {
         return (

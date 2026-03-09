@@ -768,6 +768,26 @@ input:checked + .slider:before {
   line-height: 1.3;
   font-weight: 700;
 }
+
+.assistant-image-wrap {
+  margin-top: 0.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.assistant-image {
+  display: block;
+  max-width: min(640px, 72vw);
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.assistant-image-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+}
 /* Profile Button Styles - Add these to your existing App.css */
 
 .header-controls {
