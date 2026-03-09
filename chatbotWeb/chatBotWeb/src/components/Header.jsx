@@ -34,6 +34,24 @@ const MoonIcon = () => (
   </svg>
 );
 
+const GoldLensIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="6" />
+    <line x1="16.2" y1="16.2" x2="21" y2="21" />
+    <line x1="8.5" y1="7.2" x2="10.2" y2="5.4" />
+    <line x1="6.9" y1="9.1" x2="5.1" y2="9.1" />
+    <line x1="9.1" y1="14.9" x2="9.1" y2="16.7" />
+  </svg>
+);
+
 function Header({ theme, toggleTheme, onProfileClick }) {
   const { user, signOut } = useAuth();
 
@@ -58,6 +76,21 @@ function Header({ theme, toggleTheme, onProfileClick }) {
           />
           <span className="profile-text">Profile</span>
         </button>
+
+        <a
+          href="https://my.sa.ucsb.edu/gold/Home.aspx"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="gold-lens-link"
+          title="Open UCSB GOLD"
+          aria-label="Open UCSB GOLD in a new tab"
+        >
+          <span className="gold-lens-spark" />
+          <span className="gold-lens-icon-wrap">
+            <GoldLensIcon />
+          </span>
+          <span className="gold-lens-text">GOLD</span>
+        </a>
 
         {user && (
           <button onClick={signOut} className="logout-btn" type="button">

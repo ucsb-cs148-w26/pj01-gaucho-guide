@@ -413,6 +413,12 @@ function App() {
   return (
     <div className="app" data-theme={theme}>
       <div className="hover-trigger" onMouseEnter={handleMouseEnterSidebar} />
+      <div
+        className={`history-indicator ${isSidebarOpen ? "hidden" : ""}`}
+        aria-hidden="true"
+      >
+        <span className="history-indicator-arrow">›</span>
+      </div>
 
       <div className="sidebar-wrapper" onMouseLeave={handleMouseLeaveSidebar}>
         <Sidebar
