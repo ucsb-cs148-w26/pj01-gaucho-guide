@@ -1,5 +1,11 @@
 {
-  "installCommand": "echo skip-root-install",
-  "buildCommand": "cd chatbotWeb/chatBotWeb && npm install --include=dev --no-audit --no-fund && npm run build",
-  "outputDirectory": "chatbotWeb/chatBotWeb/dist"
+  "installCommand": "cd chatbotWeb/chatBotWeb && npm install --include=dev --no-audit --no-fund",
+  "buildCommand": "cd chatbotWeb/chatBotWeb && npm run build",
+  "outputDirectory": "chatbotWeb/chatBotWeb/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

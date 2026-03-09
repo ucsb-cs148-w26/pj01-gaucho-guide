@@ -27,6 +27,13 @@ function App() {
 
   const bottomRef = useRef(null);
   const sessionIdRef = useRef(null);
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const apiUrl = (path) => {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return API_BASE_URL ? `${API_BASE_URL}${normalizedPath}` : normalizedPath;
+  };
 
   useEffect(() => {
     document.body.setAttribute("data-theme", theme);
@@ -82,7 +89,7 @@ function App() {
       const token = await getIdToken();
       if (!token) return;
       try {
-        const res = await fetch(`/chat/sessions`, {
+        const res = await fetch(apiUrl("/chat/sessions"), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
@@ -231,7 +238,7 @@ function App() {
         formData.append("file", file);
 
         const token = await getIdToken();
-        const transcriptRes = await fetch("/transcript/parse", {
+        const transcriptRes = await fetch(apiUrl("/transcript/parse"), {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
           body: formData,
@@ -266,7 +273,7 @@ function App() {
       setInputMessage("");
 
       const token = await getIdToken();
-      const res = await fetch("/chat/response", {
+      const res = await fetch(apiUrl("/chat/response"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -292,7 +299,7 @@ function App() {
       ]);
 
       if (token) {
-        const sessionsRes = await fetch(`/chat/sessions`, {
+        const sessionsRes = await fetch(apiUrl("/chat/sessions"), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (sessionsRes.ok) {
@@ -325,7 +332,9 @@ function App() {
     if (oldSessionId) {
       try {
         await fetch(
-          `/transcript/clear?session_id=${encodeURIComponent(oldSessionId)}`,
+          apiUrl(
+            `/transcript/clear?session_id=${encodeURIComponent(oldSessionId)}`
+          ),
           { method: "DELETE" }
         );
       } catch {
@@ -346,9 +355,12 @@ function App() {
     try {
       const token = await getIdToken();
       if (!token) return;
-      const res = await fetch(`/chat/sessions/${encodeURIComponent(chatSessionId)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        apiUrl(`/chat/sessions/${encodeURIComponent(chatSessionId)}`),
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!res.ok) return;
       const data = await res.json();
       const restored = (data.messages || []).map((m) => ({
