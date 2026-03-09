@@ -25,3 +25,4 @@ ollama>=0.6.0
 # Additional Dependencies
 click>=8.1.0
 pydantic>=2.7.0
+python-multipart>=0.0.9
