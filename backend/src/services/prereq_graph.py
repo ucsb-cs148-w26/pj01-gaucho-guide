@@ -51,10 +51,24 @@ def extract_completed_courses_from_transcript(transcript_data: dict) -> list[str
         if not isinstance(raw_code, str) or not raw_code.strip():
             continue
 
-        raw_grade = row.get("grade")
-        grade = str(raw_grade).strip().upper() if raw_grade is not None else ""
-        if grade in INCOMPLETE_OR_FAILING_GRADES:
+        row_status = row.get("status")
+        if isinstance(row_status, str) and row_status.strip().lower() == "completed":
+            completed.add(normalize_course_code(raw_code))
             continue
+
+        comp_units = row.get("comp_units")
+        try:
+            comp_units_f = float(comp_units) if comp_units is not None else None
+        except Exception:
+            comp_units_f = None
+        if comp_units_f is not None:
+            if comp_units_f <= 0:
+                continue
+        else:
+            raw_grade = row.get("grade")
+            grade = str(raw_grade).strip().upper() if raw_grade is not None else ""
+            if grade in INCOMPLETE_OR_FAILING_GRADES:
+                continue
 
         completed.add(normalize_course_code(raw_code))
 

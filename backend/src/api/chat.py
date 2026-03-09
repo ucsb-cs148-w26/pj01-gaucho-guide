@@ -19,6 +19,7 @@ from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_rea
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
 from src.services.prereq_graph import generate_remaining_path_image
+from src.services.transcript_advisor import build_transcript_advising_context
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
@@ -76,6 +77,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 ENABLE_REVERSE_SEARCH = env_bool("ENABLE_REVERSE_SEARCH", False)
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
 UCSB_CATALOG_NAMESPACE = os.getenv("UCSB_CATALOG_NAMESPACE", "catalog_class_data")
+TRANSCRIPT_DETERMINISTIC_ADVICE = env_bool("TRANSCRIPT_DETERMINISTIC_ADVICE", True)
 
 
 def to_text(x):
@@ -131,6 +133,89 @@ def get_user_email_from_request(http_request: Request) -> str | None:
     return None
 
 
+def _is_transcript_planning_query(user_text: str) -> bool:
+    q = user_text.lower()
+    key_phrases = [
+        "based on my transcript",
+        "what can i take",
+        "what should i take",
+        "what classes can i take",
+        "what courses can i take",
+        "what courses should i take",
+        "next classes",
+        "next courses",
+        "courses ive taken",
+        "courses i've taken",
+        "analyze my transcript",
+        "analyze my courses",
+        "course plan",
+        "degree progress",
+    ]
+    return any(p in q for p in key_phrases)
+
+
+def _list_preview(items: list[str], limit: int = 12) -> str:
+    if not items:
+        return "None"
+    preview = items[:limit]
+    suffix = f" (+{len(items) - limit} more)" if len(items) > limit else ""
+    return ", ".join(preview) + suffix
+
+
+def _build_transcript_constraint_block(transcript_context: dict) -> str:
+    completed = transcript_context.get("completed_courses", [])
+    in_progress = transcript_context.get("in_progress_courses", [])
+    eligible = transcript_context.get("eligible_next_courses", [])
+    not_passed = transcript_context.get("not_passed_courses", [])
+    gpa = transcript_context.get("cumulative_gpa")
+    major = transcript_context.get("major")
+    parser_strategy = transcript_context.get("parser_strategy_used")
+
+    return (
+        "TRANSCRIPT DERIVED FACTS (deterministic, highest priority):\n"
+        f"- Major: {major}\n"
+        f"- Cumulative GPA: {gpa}\n"
+        f"- Parser strategy used: {parser_strategy}\n"
+        f"- Completed courses: {_list_preview(completed)}\n"
+        f"- In-progress/planned courses: {_list_preview(in_progress)}\n"
+        f"- Not-passed courses: {_list_preview(not_passed)}\n"
+        f"- Eligible next courses (based on completed prereqs): {_list_preview(eligible)}\n"
+        "HARD CONSTRAINTS:\n"
+        "1) Never claim an in-progress/planned course is completed.\n"
+        "2) Never recommend a completed course as a next course.\n"
+        "3) Never recommend an in-progress/planned course as a new next course.\n"
+        "4) For recommendations, prioritize courses from the eligible-next list above.\n"
+        "5) When stating GPA or progress, use the deterministic transcript facts above."
+    )
+
+
+def _build_deterministic_transcript_advice(transcript_context: dict) -> str:
+    major = transcript_context.get("major") or "Unknown"
+    gpa = transcript_context.get("cumulative_gpa")
+    completed_cs = transcript_context.get("completed_cs_courses", [])
+    in_progress_cs = transcript_context.get("in_progress_cs_courses", [])
+    eligible_cs = transcript_context.get("eligible_next_cs_courses", [])
+    parser_strategy = transcript_context.get("parser_strategy_used")
+
+    gpa_text = f"{gpa:.2f}" if isinstance(gpa, (int, float)) else "Unavailable"
+    completed_text = _list_preview(completed_cs, limit=14)
+    progress_text = _list_preview(in_progress_cs, limit=10)
+    eligible_text = _list_preview(eligible_cs, limit=12)
+
+    return (
+        "**Transcript-Based CS Plan**\n"
+        f"- Major: {major}\n"
+        f"- Cumulative GPA: {gpa_text}\n"
+        f"- Completed CMPSC: {completed_text}\n"
+        f"- In progress/planned CMPSC: {progress_text}\n"
+        f"- Recommended next CMPSC (eligible now): {eligible_text}\n\n"
+        "**How this was generated**\n"
+        "- Recommendations are constrained by your parsed transcript and prerequisite rules.\n"
+        "- Completed or currently in-progress courses are excluded from new-course recommendations.\n"
+        f"- Parser strategy used: {parser_strategy}."
+    )
+
+
 @router.post("/response", response_model=ChatResponseDTO)
 async def get_chat_response(request: ChatRequestDTO, http_request: Request):
     model_name = request.model_name or DEFAULT_GEMINI_MODEL
@@ -152,6 +237,33 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         user_text = request.message
         user_email = get_user_email_from_request(http_request)
+        chat_session_id = str(request.chat_session_id)
+
+        transcript_data = session_manager.load_transcript(chat_session_id)
+        transcript_context = (
+            build_transcript_advising_context(transcript_data) if transcript_data else None
+        )
+
+        if (
+            transcript_context
+            and TRANSCRIPT_DETERMINISTIC_ADVICE
+            and _is_transcript_planning_query(user_text)
+        ):
+            deterministic_response = _build_deterministic_transcript_advice(transcript_context)
+            user_text_saved = to_text(user_text)
+            ai_text_saved = to_text(deterministic_response)
+
+            session_manager.save_message(chat_session_id, "human", user_text_saved)
+            session_manager.save_message(chat_session_id, "ai", ai_text_saved)
+
+            if user_email:
+                firebase_history.save_message(user_email, chat_session_id, "human", user_text_saved)
+                firebase_history.save_message(user_email, chat_session_id, "ai", ai_text_saved)
+
+            return ChatResponseDTO(
+                response=deterministic_response,
+                model_name="deterministic-transcript-advisor",
+            )
 
         course_codes = extract_course_codes(user_text)
         inserted_docs = 0
@@ -184,17 +296,20 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
                 [d.page_content for d in catalog_docs]))
         context_text = "\n\n".join(context_sections)
 
-        transcript_data = session_manager.load_transcript(str(request.chat_session_id))
         transcript_section = ""
         if transcript_data:
             transcript_section = f"\nSTUDENT TRANSCRIPT:\n{json.dumps(transcript_data, indent=2)}\n"
+            transcript_section += "\nTRANSCRIPT FACTS:\n" + _build_transcript_constraint_block(transcript_context) + "\n"
 
         system_prompt = SystemMessage(content=f"""
         You are GauchoGuider, an academic-focused UCSB advising assistant.
 
         RULES:
         1. Prioritize educational outcomes: course planning, prerequisites, degree progress, GPA strategy, study tactics, and graduation readiness.
-        2. Use the student transcript (if provided) to personalize advice and avoid recommending courses the student already completed.
+        2. Use the student transcript (if provided) to personalize advice.
+           - Never mark in-progress courses as completed.
+           - Never recommend completed or in-progress/planned courses as new next courses.
+           - For "what should I take next" questions, prioritize the deterministic eligible-next list.
         3. Use the provided RAG context first. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
         4. If details are missing or uncertain, use reverse search to verify facts.
         5. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
@@ -230,7 +345,6 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         final_message = response_state["messages"][-1].content
 
-        chat_session_id = str(request.chat_session_id)
         user_text_saved = to_text(user_text)
         ai_text_saved = to_text(final_message)
 

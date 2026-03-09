@@ -8,9 +8,9 @@ Primary path:
   2) Parse transcript fields and course rows with robust regex windows around
      enrollment codes across the full document (not line-fragile).
 
-Optional fallback:
-  - If local parsing confidence is low and a Gemini API key is configured,
-    the parser can call Gemini to recover structured output.
+Default behavior:
+  - Gemini-first (if API key is configured), then deterministic local parsing.
+  - Final output is selected after deterministic normalization + quality checks.
 """
 
 from __future__ import annotations
@@ -56,6 +56,9 @@ COURSE_HEADER_RE = re.compile(
 )
 
 PASSING_OR_IN_PROGRESS_GRADES = {"A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "P", "S", "IP", "I", "W"}
+PASSING_GRADES = {"A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "P", "S"}
+FAILING_GRADES = {"F", "NP", "U", "D", "D+", "D-"}
+IN_PROGRESS_GRADES = {"IP", "I"}
 MAJOR_STOP_MARKERS = (
     "COURSE",
     "GRADE",
@@ -84,6 +87,7 @@ def _empty_result() -> dict:
         "cumulative_gpa": None,
         "total_units_attempted": None,
         "total_units_passed": None,
+        "parser_strategy_used": None,
     }
 
 
@@ -346,7 +350,34 @@ def _course_quality(course: dict) -> int:
         score += 1
     if course.get("grade"):
         score += 1
+    status = course.get("status")
+    if status in {"completed", "in_progress", "planned", "completed_not_passed"}:
+        score += 1
     return score
+
+
+def _derive_status(grade: str | None, comp_units: float | None, att_units: float | None) -> str:
+    g = grade.strip().upper() if isinstance(grade, str) else ""
+
+    if comp_units is not None:
+        if comp_units > 0:
+            if g in FAILING_GRADES:
+                return "completed_not_passed"
+            return "completed"
+        if comp_units == 0:
+            if g in IN_PROGRESS_GRADES:
+                return "in_progress"
+            if att_units is not None and att_units > 0:
+                return "in_progress"
+            return "planned"
+
+    if g in IN_PROGRESS_GRADES:
+        return "in_progress"
+    if g in FAILING_GRADES:
+        return "completed_not_passed"
+    if g in PASSING_GRADES:
+        return "completed"
+    return "in_progress" if (att_units is not None and att_units > 0) else "planned"
 
 
 def _extract_courses_via_enrollment_windows(compact_text: str) -> list[dict]:
@@ -375,24 +406,39 @@ def _extract_courses_via_enrollment_windows(compact_text: str) -> list[dict]:
             grade = gm.group(1)
 
         units = None
+        att_units = None
+        comp_units = None
+        gpa_units = None
         grade_points = None
+        unit_points = None
         units_m = UNITS_RE.search(after)
         if units_m:
-            units = float(units_m.group("att"))
-            gp = float(units_m.group("points"))
+            att_units = float(units_m.group("att"))
+            comp_units = float(units_m.group("comp"))
+            gpa_units = float(units_m.group("gpa_units"))
+            unit_points = float(units_m.group("points"))
+            units = att_units
+            gp = unit_points
             grade_points = gp if gp > 0 else None
 
         quarter = _quarter_for_position(enrl_start, quarter_positions, quarter_labels)
         if not quarter:
             continue
 
+        status = _derive_status(grade, comp_units, att_units)
+
         course = {
             "quarter": quarter,
             "course_code": course_code,
             "course_title": course_title,
             "units": units,
+            "att_units": att_units,
+            "comp_units": comp_units,
+            "gpa_units": gpa_units,
+            "unit_points": unit_points,
             "grade": grade,
             "grade_points": grade_points,
+            "status": status,
             "_enrl": enrl_m.group(1),
             "_pos": enrl_start,
         }
@@ -428,6 +474,11 @@ def _score_parse(parsed: dict) -> int:
 
     courses = parsed.get("courses") or []
     score += min(len(courses), 12) * 2
+    completed_count = sum(
+        1 for c in courses if isinstance(c, dict) and c.get("status") == "completed"
+    )
+    if completed_count:
+        score += min(completed_count, 10)
 
     if parsed.get("cumulative_gpa") is not None:
         score += 1
@@ -491,14 +542,35 @@ def _sanitize_llm_output(candidate: Any) -> dict | None:
             else:
                 grade = None
 
+            att_units = _coerce_float(
+                row.get("att_units", row.get("units"))
+            )
+            comp_units = _coerce_float(row.get("comp_units"))
+            gpa_units = _coerce_float(row.get("gpa_units"))
+            unit_points = _coerce_float(row.get("unit_points"))
+            grade_points = _coerce_float(row.get("grade_points"))
+            if grade_points is None and unit_points is not None and unit_points > 0:
+                grade_points = unit_points
+
+            status = row.get("status")
+            if isinstance(status, str):
+                status = status.strip().lower()
+            if status not in {"completed", "in_progress", "planned", "completed_not_passed"}:
+                status = _derive_status(grade, comp_units, att_units)
+
             parsed_courses.append(
                 {
                     "quarter": str(quarter).strip(),
                     "course_code": _compact_whitespace(str(code).upper()),
                     "course_title": _compact_whitespace(str(title).title()),
-                    "units": _coerce_float(row.get("units")),
+                    "units": att_units,
+                    "att_units": att_units,
+                    "comp_units": comp_units,
+                    "gpa_units": gpa_units,
+                    "unit_points": unit_points,
                     "grade": grade,
-                    "grade_points": _coerce_float(row.get("grade_points")),
+                    "grade_points": grade_points,
+                    "status": status,
                 }
             )
     out["courses"] = parsed_courses
@@ -550,8 +622,13 @@ Return exactly this schema and nothing else:
       "course_code": string,
       "course_title": string,
       "units": number|null,
+      "att_units": number|null,
+      "comp_units": number|null,
+      "gpa_units": number|null,
+      "unit_points": number|null,
       "grade": string|null,
-      "grade_points": number|null
+      "grade_points": number|null,
+      "status": "completed"|"in_progress"|"planned"|"completed_not_passed"|null
     }
   ],
   "cumulative_gpa": number|null,
@@ -620,14 +697,34 @@ def _filter_invalid_courses(parsed: dict) -> dict:
             grade = grade.strip().upper()
             if grade and grade not in PASSING_OR_IN_PROGRESS_GRADES and not re.match(r"^[A-DF][+\-]?$", grade):
                 grade = None
+
+        att_units = _coerce_float(course.get("att_units", course.get("units")))
+        comp_units = _coerce_float(course.get("comp_units"))
+        gpa_units = _coerce_float(course.get("gpa_units"))
+        unit_points = _coerce_float(course.get("unit_points"))
+        grade_points = _coerce_float(course.get("grade_points"))
+        if grade_points is None and unit_points is not None and unit_points > 0:
+            grade_points = unit_points
+
+        status = course.get("status")
+        if isinstance(status, str):
+            status = status.strip().lower()
+        if status not in {"completed", "in_progress", "planned", "completed_not_passed"}:
+            status = _derive_status(grade, comp_units, att_units)
+
         valid.append(
             {
                 "quarter": str(course.get("quarter")).strip(),
                 "course_code": _compact_whitespace(str(course.get("course_code")).upper()),
                 "course_title": _compact_whitespace(str(course.get("course_title"))),
-                "units": _coerce_float(course.get("units")),
+                "units": att_units,
+                "att_units": att_units,
+                "comp_units": comp_units,
+                "gpa_units": gpa_units,
+                "unit_points": unit_points,
                 "grade": grade,
-                "grade_points": _coerce_float(course.get("grade_points")),
+                "grade_points": grade_points,
+                "status": status,
             }
         )
     cleaned["courses"] = valid
@@ -637,19 +734,34 @@ def _filter_invalid_courses(parsed: dict) -> dict:
 def parse_transcript(pdf_bytes: bytes) -> dict:
     transcript_text = _pdf_to_markdown(pdf_bytes)
     local_result = _filter_invalid_courses(_parse_markdown(transcript_text))
+    local_result["parser_strategy_used"] = "local"
 
-    use_gemini_fallback = os.getenv("TRANSCRIPT_USE_GEMINI_FALLBACK", "1").strip().lower() in {
+    use_gemini = os.getenv("TRANSCRIPT_USE_GEMINI_FALLBACK", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    gemini_primary = os.getenv("TRANSCRIPT_GEMINI_PRIMARY", "1").strip().lower() in {
         "1",
         "true",
         "yes",
         "on",
     }
 
-    if use_gemini_fallback and _needs_fallback(local_result):
-        llm_result = _parse_with_gemini(transcript_text)
-        if llm_result:
-            llm_result = _filter_invalid_courses(llm_result)
-            if _score_parse(llm_result) > _score_parse(local_result):
-                return llm_result
+    llm_result = None
+    if use_gemini:
+        # Gemini-first by default for better OCR/layout resilience.
+        if gemini_primary or _needs_fallback(local_result):
+            llm_result = _parse_with_gemini(transcript_text)
+            if llm_result:
+                llm_result = _filter_invalid_courses(llm_result)
+                llm_result["parser_strategy_used"] = "gemini"
+
+    if llm_result and _score_parse(llm_result) >= _score_parse(local_result):
+        return llm_result
+
+    if llm_result and gemini_primary and _score_parse(llm_result) >= 8:
+        return llm_result
 
     return local_result
