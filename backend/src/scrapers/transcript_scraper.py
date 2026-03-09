@@ -1,42 +1,31 @@
 """
 transcript_scraper.py
 ---------------------
-Parses a UCSB unofficial transcript PDF into structured JSON using:
-  1. pymupdf4llm  — converts the PDF to Markdown
-  2. Pure Python regex — extracts structured data from the Markdown (no LLM, no API calls)
+Parses a UCSB unofficial transcript PDF into structured JSON.
 
-Output JSON schema
-------------------
-{
-  "student_name":          str,
-  "student_id":            str,
-  "major":                 str,
-  "courses": [
-    {
-      "quarter":       str,   # e.g. "Fall 2023"
-      "course_code":   str,   # e.g. "CMPSC 16"
-      "course_title":  str,
-      "units":         float,
-      "grade":         str | null,  # e.g. "A", "B+", "P", "NP", "W", "IP", null if in-progress
-      "grade_points":  float | null
-    }
-  ],
-  "cumulative_gpa":        float | null,
-  "total_units_attempted": float | null,
-  "total_units_passed":    float | null
-}
+Primary path:
+  1) Extract text from PDF with pymupdf4llm (best layout) or pypdf fallback.
+  2) Parse transcript fields and course rows with robust regex windows around
+     enrollment codes across the full document (not line-fragile).
 
-Usage
------
-  from src.scrapers.transcript_scraper import parse_transcript
-
-  with open("transcript.pdf", "rb") as f:
-      result = parse_transcript(f.read())
+Optional fallback:
+  - If local parsing confidence is low and a Gemini API key is configured,
+    the parser can call Gemini to recover structured output.
 """
 
+from __future__ import annotations
+
+import json
 import os
 import re
 import tempfile
+from bisect import bisect_right
+from typing import Any
+
+try:
+    import requests
+except Exception:
+    requests = None
 
 try:
     import pymupdf4llm
@@ -49,213 +38,549 @@ except Exception:
     PdfReader = None
 
 
-def _pdf_to_markdown(pdf_bytes: bytes) -> str:
-    # Preferred extractor for best layout fidelity.
-    if pymupdf4llm is not None:
-        tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-        try:
-            tmp.write(pdf_bytes)
-            tmp.close()
-            return pymupdf4llm.to_markdown(tmp.name)
-        finally:
-            try:
-                os.unlink(tmp.name)
-            except OSError:
-                pass
+QUARTER_RE = re.compile(r"\b(Fall|Winter|Spring|Summer)\s+((?:19|20)\d{2})\b", re.IGNORECASE)
+ENRL_RE = re.compile(r"\b(\d{5})\b")
+GRADE_RE = re.compile(r"\*\*(A[+\-]?|B[+\-]?|C[+\-]?|D[+\-]?|F|P|NP|W|IP|S|U|I)\*\*")
+UNITS_RE = re.compile(
+    r"(?P<att>\d+(?:\.\d+)?)\s+"
+    r"(?P<comp>\d+(?:\.\d+)?)\s+"
+    r"(?P<gpa_units>\d+(?:\.\d+)?)\s+"
+    r"(?P<points>\d+(?:\.\d+)?)"
+)
 
-    # Lightweight fallback for serverless deployments.
+COURSE_CODE_RE_STR = (
+    r"[A-Z]{1,5}(?:\s+[A-Z]{1,5})?\s*\d+[A-Z0-9]*(?:\s*-\s*\d+[A-Z]*)?"
+)
+COURSE_HEADER_RE = re.compile(
+    rf"(?P<course_code>{COURSE_CODE_RE_STR})\s*-\s*(?P<course_title>[A-Z][A-Z0-9/&,\.\'()\- ]{{2,}})"
+)
+
+PASSING_OR_IN_PROGRESS_GRADES = {"A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "P", "S", "IP", "I", "W"}
+
+
+def _empty_result() -> dict:
+    return {
+        "student_name": None,
+        "student_id": None,
+        "major": None,
+        "courses": [],
+        "cumulative_gpa": None,
+        "total_units_attempted": None,
+        "total_units_passed": None,
+    }
+
+
+def _safe_unlink(path: str) -> None:
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _extract_with_pymupdf4llm(pdf_bytes: bytes) -> str | None:
+    if pymupdf4llm is None:
+        return None
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    try:
+        tmp.write(pdf_bytes)
+        tmp.close()
+        text = pymupdf4llm.to_markdown(tmp.name) or ""
+        return text.strip() or None
+    except Exception:
+        return None
+    finally:
+        _safe_unlink(tmp.name)
+
+
+def _extract_with_pypdf(pdf_bytes: bytes) -> str | None:
     if PdfReader is None:
-        raise RuntimeError("No PDF parser available. Install pymupdf4llm or pypdf.")
+        return None
 
     tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
     try:
         tmp.write(pdf_bytes)
         tmp.close()
         reader = PdfReader(tmp.name)
-        pages = []
-        for page in reader.pages:
-            pages.append(page.extract_text() or "")
-        return "\n\n".join(pages)
+        pages = [(page.extract_text() or "") for page in reader.pages]
+        text = "\n\n".join(pages).strip()
+        return text or None
+    except Exception:
+        return None
     finally:
-        try:
-            os.unlink(tmp.name)
-        except OSError:
-            pass
+        _safe_unlink(tmp.name)
 
 
-def _collapse_lines(md: str) -> str:
+def _pdf_to_markdown(pdf_bytes: bytes) -> str:
     """
-    pymupdf4llm wraps long lines mid-word/mid-number.
-    Join lines that are clearly continuations (no blank line separator,
-    and the next line doesn't start a new logical block).
-    We do this by collapsing the whole doc into a single long string,
-    then re-splitting on double newlines (paragraph breaks).
+    Attempts multiple extractors and returns the first non-empty text.
     """
-    paragraphs = re.split(r'\n{2,}', md)
-    collapsed = []
-    for para in paragraphs:
-        # Join wrapped lines within a paragraph into one line
-        single = " ".join(line.strip() for line in para.splitlines() if line.strip())
-        collapsed.append(single)
-    return "\n\n".join(collapsed)
+    extracted = _extract_with_pymupdf4llm(pdf_bytes)
+    if extracted:
+        return extracted
+
+    extracted = _extract_with_pypdf(pdf_bytes)
+    if extracted:
+        return extracted
+
+    raise RuntimeError("No PDF parser available. Install pymupdf4llm or pypdf.")
 
 
-def _parse_markdown(md: str) -> dict:
-    text = _collapse_lines(md)
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
+def _normalize_text(raw_text: str) -> str:
+    text = raw_text.replace("\x00", " ")
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
-    # --- Student info ---
-    student_name = None
-    student_id = None
-    major = None
 
-    for line in lines:
-        m = re.search(r'Perm(?:\s+Number)?[:\s]+([A-Z0-9]+)', line, re.IGNORECASE)
+def _compact_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_student_id(compact_text: str) -> str | None:
+    patterns = [
+        r"\bPerm(?:\s+Number)?[:#\s\-]+([A-Z0-9]{6,12})\b",
+        r"\bStudent\s*ID[:#\s\-]+([A-Z0-9]{6,12})\b",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, compact_text, re.IGNORECASE)
         if m:
-            student_id = m.group(1)
-            # Name is on the same collapsed line before "Perm"
-            name_part = line[:m.start()].strip()
-            name_clean = re.sub(r'[^A-Z\s\-]', '', name_part).strip()
-            if name_clean:
-                student_name = name_clean.title()
-        m = re.search(r'(?:ENGR|L&S|COE|CLAS|BREN|EDUC|MUS|FINE)\s*/\s*(?:BS|BA|MS|PhD|Minor)\s*/\s*([A-Z]+)', line)
+            return m.group(1).strip()
+    return None
+
+
+def _normalize_name(raw_name: str) -> str | None:
+    cleaned = re.sub(r"[^A-Za-z,\-'\s]", " ", raw_name)
+    cleaned = _compact_whitespace(cleaned)
+    if not cleaned:
+        return None
+    return cleaned.title()
+
+
+def _extract_student_name(compact_text: str, student_id: str | None) -> str | None:
+    patterns = [
+        r"\bName[:\s\-]+([A-Z][A-Z,\-'\s]{4,80})\b",
+        r"\bStudent[:\s\-]+([A-Z][A-Z,\-'\s]{4,80})\b",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, compact_text, re.IGNORECASE)
         if m:
-            major = m.group(1).strip()
+            name = _normalize_name(m.group(1))
+            if name:
+                return name
 
-    # --- Patterns ---
-    QUARTER_RE = re.compile(r'^(Fall|Winter|Spring|Summer)\s+((19|20)\d{2})$', re.IGNORECASE)
-    GPA_VALUE_RE = re.compile(r'\*\*GPA\s+([\d.]+)\*\*')
-    # Units block: att  comp  gpa  points  (4 floats in a row)
-    UNITS_RE = re.compile(r'(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+([\d.]+)')
+    if student_id:
+        m = re.search(
+            rf"(.{{0,90}})\bPerm(?:\s+Number)?[:#\s\-]+{re.escape(student_id)}\b",
+            compact_text,
+            re.IGNORECASE,
+        )
+        if m:
+            candidate = _normalize_name(m.group(1))
+            if candidate:
+                candidate = re.sub(r"(Unofficial Transcript|University Of California|Santa Barbara)$", "", candidate, flags=re.IGNORECASE).strip()
+                return candidate or None
+    return None
 
-    # Strategy: anchor on 5-digit enrollment codes to split courses.
-    # Each course chunk looks like:
-    #   CODE -TITLE [**GRADE**] ENRLCD att comp gpa pts [SUBTITLE]
-    # We find all enrollment code positions, then for each one work
-    # backwards to find the course code+title and forwards for units.
-    ENRL_RE = re.compile(r'\b(\d{5})\b')
-    GRADE_RE = re.compile(r'\*\*([A-DF][+\-]?|P|NP|W|IP|S|U|I)\*\*')
-    # Course code: 1-5 uppercase letters (dept), optional second word, then digits+suffix
-    # e.g. CMPSC 16, PHYS 6AL, C LIT 30B, ES 1, BL ST 1, WRIT 105SW, PSTAT 120A
-    COURSE_HEADER_RE = re.compile(
-        r'([A-Z]{1,5}(?:\s[A-Z]{1,5})?\s*\d+[A-Z0-9]*(?:\s*-\s*\d+[A-Z]*)?)'
-        r'\s*-\s*'
-        r'([A-Z][A-Z0-9\s/&,\.\']*?)'
-        r'\s*(?:\*\*[A-DF][+\-]?\*\*|\*\*[PW]\*\*|\*\*NP\*\*|\*\*IP\*\*|\d{5})'
-    )
-    # Subtitle: trailing ALL-CAPS word(s) after the units block, e.g. "SCI", "SOLVING I", "MICRO"
-    SUBTITLE_RE = re.compile(r'[\d.]+\s+([A-Z][A-Z\s/&]*[A-Z])\s*$')
 
-    courses = []
-    current_quarter = None
+def _extract_major(compact_text: str) -> str | None:
+    patterns = [
+        r"\bMajor(?:\(s\))?[:\s\-]+([A-Za-z][A-Za-z/&,\-\s]{2,80})\b",
+        r"\b(?:ENGR|L&S|COE|CLAS|BREN|EDUC|MUS|FINE)\s*/\s*(?:BS|BA|MS|PHD|Minor)\s*/\s*([A-Za-z][A-Za-z&\-\s]{2,60})\b",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, compact_text, re.IGNORECASE)
+        if m:
+            major = _compact_whitespace(m.group(1))
+            major = re.split(
+                r"\b(?:Fall|Winter|Spring|Summer)\s+(?:19|20)\d{2}\b",
+                major,
+                maxsplit=1,
+                flags=re.IGNORECASE,
+            )[0]
+            major = re.sub(r"\b(Department|Track|Option)\b.*$", "", major, flags=re.IGNORECASE).strip()
+            major = re.split(r"\b(?:Cumulative|Quarter)\s+Total\b", major, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+            major = re.sub(r"\b(Fall|Winter|Spring|Summer)\b.*$", "", major, flags=re.IGNORECASE).strip()
+            if major:
+                return major.title()
+    return None
+
+
+def _extract_cumulative(lines: list[str], compact_text: str) -> tuple[float | None, float | None, float | None]:
     cumulative_gpa = None
     total_units_attempted = None
     total_units_passed = None
 
     for line in lines:
-        # Skip page headers/footers
-        if re.match(r'^https?://', line) or re.match(r'^\d{1,2}/\d{1,2}/\d{2,4}', line) or \
-                "Printable Version" in line or "University of California" in line:
+        if "cumulative total" not in line.lower():
             continue
 
-        # Quarter header (short line, just "Fall 2023" etc.)
-        if QUARTER_RE.match(line):
-            current_quarter = line.strip().title()
-            continue
+        gpa_m = re.search(r"\bGPA\s+\*{0,2}(\d+(?:\.\d+)?)\*{0,2}", line, re.IGNORECASE)
+        if gpa_m:
+            cumulative_gpa = float(gpa_m.group(1))
 
-        # Cumulative total — keep updating so we end up with the final value
-        if "Cumulative Total" in line:
-            gpa_m = GPA_VALUE_RE.search(line)
-            if gpa_m:
-                cumulative_gpa = float(gpa_m.group(1))
-            after_gpa = re.sub(r'.*\*\*GPA\s+[\d.]+\*\*', '', line)
-            units_m = UNITS_RE.search(after_gpa)
+        units_matches = list(UNITS_RE.finditer(line))
+        if units_matches:
+            units_m = units_matches[-1]
+            total_units_attempted = float(units_m.group("att"))
+            total_units_passed = float(units_m.group("comp"))
+
+    if cumulative_gpa is None or total_units_attempted is None:
+        cm = re.search(r"\bCumulative\s+Total\b", compact_text, re.IGNORECASE)
+        if cm:
+            snippet = compact_text[cm.start(): cm.start() + 260]
+            if cumulative_gpa is None:
+                gpa_m = re.search(r"\bGPA\s+\*{0,2}(\d+(?:\.\d+)?)\*{0,2}", snippet, re.IGNORECASE)
+                if gpa_m:
+                    cumulative_gpa = float(gpa_m.group(1))
+            units_m = UNITS_RE.search(snippet)
             if units_m:
-                total_units_attempted = float(units_m.group(1))
-                total_units_passed = float(units_m.group(2))
+                total_units_attempted = float(units_m.group("att"))
+                total_units_passed = float(units_m.group("comp"))
+
+    return cumulative_gpa, total_units_attempted, total_units_passed
+
+
+def _quarter_markers(compact_text: str) -> tuple[list[int], list[str]]:
+    positions: list[int] = []
+    labels: list[str] = []
+    for m in QUARTER_RE.finditer(compact_text):
+        positions.append(m.start())
+        labels.append(f"{m.group(1).title()} {m.group(2)}")
+    return positions, labels
+
+
+def _quarter_for_position(pos: int, quarter_positions: list[int], quarter_labels: list[str]) -> str | None:
+    if not quarter_positions:
+        return None
+    idx = bisect_right(quarter_positions, pos) - 1
+    if idx < 0:
+        return None
+    return quarter_labels[idx]
+
+
+def _clean_course_title(raw_title: str) -> str:
+    title = raw_title
+    title = re.split(r"\s+\*\*(?:A[+\-]?|B[+\-]?|C[+\-]?|D[+\-]?|F|P|NP|W|IP|S|U|I)\*\*", title)[0]
+    title = re.sub(r"\s+\d{5}\b.*$", "", title)
+    title = _compact_whitespace(title)
+    if not title:
+        return title
+    return title.title()
+
+
+def _course_quality(course: dict) -> int:
+    score = 0
+    if course.get("quarter"):
+        score += 2
+    if course.get("course_code"):
+        score += 2
+    if course.get("course_title"):
+        score += 2
+    if course.get("units") is not None:
+        score += 1
+    if course.get("grade"):
+        score += 1
+    return score
+
+
+def _extract_courses_via_enrollment_windows(compact_text: str) -> list[dict]:
+    quarter_positions, quarter_labels = _quarter_markers(compact_text)
+    courses = []
+
+    for enrl_m in ENRL_RE.finditer(compact_text):
+        enrl_start, enrl_end = enrl_m.span()
+
+        before = compact_text[max(0, enrl_start - 360):enrl_start]
+        after = compact_text[enrl_end:min(len(compact_text), enrl_end + 220)]
+
+        header_matches = list(COURSE_HEADER_RE.finditer(before))
+        if not header_matches:
+            continue
+        header = header_matches[-1]
+
+        course_code = _compact_whitespace(header.group("course_code")).upper()
+        course_title = _clean_course_title(header.group("course_title"))
+        if not course_title:
             continue
 
-        # Skip quarter totals, honors, transfer lines, table rows
-        if any(tok in line for tok in (
-            "Quarter Total", "Dean's Honors", "Transfer Work",
-            "Att Course", "GradeEnrlCd", "|---|", "Institution Name",
-        )):
+        grade = None
+        grade_context = before[header.end():]
+        for gm in GRADE_RE.finditer(grade_context):
+            grade = gm.group(1)
+
+        units = None
+        grade_points = None
+        units_m = UNITS_RE.search(after)
+        if units_m:
+            units = float(units_m.group("att"))
+            gp = float(units_m.group("points"))
+            grade_points = gp if gp > 0 else None
+
+        quarter = _quarter_for_position(enrl_start, quarter_positions, quarter_labels)
+        if not quarter:
             continue
 
-        if not current_quarter:
-            continue
+        course = {
+            "quarter": quarter,
+            "course_code": course_code,
+            "course_title": course_title,
+            "units": units,
+            "grade": grade,
+            "grade_points": grade_points,
+            "_enrl": enrl_m.group(1),
+            "_pos": enrl_start,
+        }
 
-        # Find all enrollment codes — each marks one course
-        enrl_matches = list(ENRL_RE.finditer(line))
-        if not enrl_matches:
-            continue
+        if _course_quality(course) >= 6:
+            courses.append(course)
 
-        for idx, enrl_m in enumerate(enrl_matches):
-            enrl_start = enrl_m.start()
-            enrl_end = enrl_m.end()
+    # De-duplicate by enrollment code + quarter, keep the highest quality candidate.
+    deduped: dict[tuple[str, str], dict] = {}
+    for course in courses:
+        key = (course.get("_enrl", ""), course["quarter"])
+        existing = deduped.get(key)
+        if existing is None or _course_quality(course) > _course_quality(existing):
+            deduped[key] = course
 
-            # The text before this enrollment code (back to previous enrl code or line start)
-            prev_end = enrl_matches[idx - 1].end() if idx > 0 else 0
-            before = line[prev_end:enrl_start].strip()
+    sorted_courses = sorted(deduped.values(), key=lambda c: c.get("_pos", 0))
+    cleaned_courses = []
+    for c in sorted_courses:
+        c.pop("_enrl", None)
+        c.pop("_pos", None)
+        cleaned_courses.append(c)
+    return cleaned_courses
 
-            # Parse course code and title from the "before" text
-            ch_m = COURSE_HEADER_RE.search(before + " " + enrl_m.group())
-            if not ch_m:
-                # Fallback: try to find CODE -TITLE anywhere in before
-                ch_m = re.search(
-                    r'([A-Z]{1,4}(?:\s[A-Z]{1,4})?\s*\d+[A-Z0-9]*(?:\s*-\s*\d+[A-Z]*)?)'
-                    r'\s*-\s*([A-Z][A-Z0-9\s/&,\.\']+)',
-                    before
-                )
-            if not ch_m:
+
+def _score_parse(parsed: dict) -> int:
+    score = 0
+    if parsed.get("student_id"):
+        score += 2
+    if parsed.get("major"):
+        score += 1
+    if parsed.get("student_name"):
+        score += 1
+
+    courses = parsed.get("courses") or []
+    score += min(len(courses), 12) * 2
+
+    if parsed.get("cumulative_gpa") is not None:
+        score += 1
+    if parsed.get("total_units_attempted") is not None:
+        score += 1
+    if parsed.get("total_units_passed") is not None:
+        score += 1
+    return score
+
+
+def _needs_fallback(parsed: dict) -> bool:
+    courses = parsed.get("courses") or []
+    if len(courses) == 0:
+        return True
+    if len(courses) < 3 and not parsed.get("student_id"):
+        return True
+    return _score_parse(parsed) < 8
+
+
+def _coerce_float(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _sanitize_llm_output(candidate: Any) -> dict | None:
+    if not isinstance(candidate, dict):
+        return None
+
+    out = _empty_result()
+    out["student_name"] = candidate.get("student_name")
+    out["student_id"] = candidate.get("student_id")
+    out["major"] = candidate.get("major")
+    out["cumulative_gpa"] = _coerce_float(candidate.get("cumulative_gpa"))
+    out["total_units_attempted"] = _coerce_float(candidate.get("total_units_attempted"))
+    out["total_units_passed"] = _coerce_float(candidate.get("total_units_passed"))
+
+    raw_courses = candidate.get("courses", [])
+    parsed_courses = []
+    if isinstance(raw_courses, list):
+        for row in raw_courses:
+            if not isinstance(row, dict):
+                continue
+            code = row.get("course_code")
+            quarter = row.get("quarter")
+            title = row.get("course_title")
+            if not code or not quarter or not title:
                 continue
 
-            course_code = ch_m.group(1).strip()
-            course_title = ch_m.group(2).strip().title()
-
-            # Grade is in the "before" text (between title and enrl code)
-            grade_m = GRADE_RE.search(before)
-            grade = grade_m.group(1) if grade_m else None
-
-            # Units are after the enrollment code, up to next enrl code or end
-            next_enrl_start = enrl_matches[idx + 1].start() if idx + 1 < len(enrl_matches) else len(line)
-            after = line[enrl_end:next_enrl_start]
-            units_m = UNITS_RE.search(after)
-            if units_m:
-                units = float(units_m.group(1))
-                gp = float(units_m.group(4))
-                grade_points = gp if gp > 0 else None
-                # Subtitle word(s) appear after the units block on the same chunk
-                after_units = after[units_m.end():]
-                sub_m = re.match(r'\s+([A-Z][A-Z0-9\s/&]*?)(?:\s*$|\s+[A-Z]{1,5}\s*\d)', after_units)
-                if sub_m:
-                    subtitle = sub_m.group(1).strip().title()
-                    if subtitle and subtitle.upper() not in ("UNDERGRAD", "HONORS"):
-                        course_title = (course_title + " " + subtitle).strip()
+            grade = row.get("grade")
+            if isinstance(grade, str):
+                grade = grade.strip().upper()
             else:
-                units = None
-                grade_points = None
+                grade = None
 
-            courses.append({
-                "quarter": current_quarter,
-                "course_code": course_code,
-                "course_title": course_title,
-                "units": units,
-                "grade": grade,
-                "grade_points": grade_points,
-            })
+            parsed_courses.append(
+                {
+                    "quarter": str(quarter).strip(),
+                    "course_code": _compact_whitespace(str(code).upper()),
+                    "course_title": _compact_whitespace(str(title).title()),
+                    "units": _coerce_float(row.get("units")),
+                    "grade": grade,
+                    "grade_points": _coerce_float(row.get("grade_points")),
+                }
+            )
+    out["courses"] = parsed_courses
+    return out
 
-    return {
-        "student_name": student_name,
-        "student_id": student_id,
-        "major": major,
-        "courses": courses,
-        "cumulative_gpa": cumulative_gpa,
-        "total_units_attempted": total_units_attempted,
-        "total_units_passed": total_units_passed,
+
+def _extract_json_from_llm_text(text: str) -> dict | None:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    cleaned = cleaned.strip()
+    try:
+        data = json.loads(cleaned)
+    except Exception:
+        m = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if not m:
+            return None
+        try:
+            data = json.loads(m.group(0))
+        except Exception:
+            return None
+    return data if isinstance(data, dict) else None
+
+
+def _parse_with_gemini(transcript_text: str) -> dict | None:
+    if requests is None:
+        return None
+
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    model = os.getenv("TRANSCRIPT_GEMINI_MODEL", "gemini-2.0-flash")
+    endpoint = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        f"?key={api_key}"
+    )
+
+    prompt = """
+Extract this UCSB transcript text into strict JSON only.
+Return exactly this schema and nothing else:
+{
+  "student_name": string|null,
+  "student_id": string|null,
+  "major": string|null,
+  "courses": [
+    {
+      "quarter": string,
+      "course_code": string,
+      "course_title": string,
+      "units": number|null,
+      "grade": string|null,
+      "grade_points": number|null
     }
+  ],
+  "cumulative_gpa": number|null,
+  "total_units_attempted": number|null,
+  "total_units_passed": number|null
+}
+""".strip()
+
+    payload = {
+        "contents": [{"parts": [{"text": f"{prompt}\n\nTranscript text:\n{transcript_text[:70000]}"}]}],
+        "generationConfig": {"temperature": 0},
+    }
+
+    try:
+        res = requests.post(endpoint, json=payload, timeout=30)
+        if res.status_code >= 300:
+            return None
+        body = res.json()
+        candidates = body.get("candidates", [])
+        if not candidates:
+            return None
+        parts = candidates[0].get("content", {}).get("parts", [])
+        text_part = None
+        for part in parts:
+            if isinstance(part, dict) and isinstance(part.get("text"), str):
+                text_part = part["text"]
+                break
+        if not text_part:
+            return None
+        parsed = _extract_json_from_llm_text(text_part)
+        if not parsed:
+            return None
+        return _sanitize_llm_output(parsed)
+    except Exception:
+        return None
+
+
+def _parse_markdown(raw_text: str) -> dict:
+    normalized = _normalize_text(raw_text)
+    compact_text = _compact_whitespace(normalized)
+    lines = [_compact_whitespace(line) for line in normalized.splitlines() if _compact_whitespace(line)]
+
+    out = _empty_result()
+    out["student_id"] = _extract_student_id(compact_text)
+    out["student_name"] = _extract_student_name(compact_text, out["student_id"])
+    out["major"] = _extract_major(compact_text)
+    out["courses"] = _extract_courses_via_enrollment_windows(compact_text)
+
+    gpa, attempted, passed = _extract_cumulative(lines, compact_text)
+    out["cumulative_gpa"] = gpa
+    out["total_units_attempted"] = attempted
+    out["total_units_passed"] = passed
+    return out
+
+
+def _filter_invalid_courses(parsed: dict) -> dict:
+    cleaned = dict(parsed)
+    valid = []
+    for course in parsed.get("courses", []):
+        if not isinstance(course, dict):
+            continue
+        if not course.get("quarter") or not course.get("course_code") or not course.get("course_title"):
+            continue
+        grade = course.get("grade")
+        if isinstance(grade, str):
+            grade = grade.strip().upper()
+            if grade and grade not in PASSING_OR_IN_PROGRESS_GRADES and not re.match(r"^[A-DF][+\-]?$", grade):
+                grade = None
+        valid.append(
+            {
+                "quarter": str(course.get("quarter")).strip(),
+                "course_code": _compact_whitespace(str(course.get("course_code")).upper()),
+                "course_title": _compact_whitespace(str(course.get("course_title"))),
+                "units": _coerce_float(course.get("units")),
+                "grade": grade,
+                "grade_points": _coerce_float(course.get("grade_points")),
+            }
+        )
+    cleaned["courses"] = valid
+    return cleaned
 
 
 def parse_transcript(pdf_bytes: bytes) -> dict:
-    markdown_text = _pdf_to_markdown(pdf_bytes)
-    return _parse_markdown(markdown_text)
+    transcript_text = _pdf_to_markdown(pdf_bytes)
+    local_result = _filter_invalid_courses(_parse_markdown(transcript_text))
+
+    use_gemini_fallback = os.getenv("TRANSCRIPT_USE_GEMINI_FALLBACK", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+    if use_gemini_fallback and _needs_fallback(local_result):
+        llm_result = _parse_with_gemini(transcript_text)
+        if llm_result:
+            llm_result = _filter_invalid_courses(llm_result)
+            if _score_parse(llm_result) > _score_parse(local_result):
+                return llm_result
+
+    return local_result
