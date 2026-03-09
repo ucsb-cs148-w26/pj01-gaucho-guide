@@ -16,6 +16,7 @@ requests
 httpx
 pymupdf
 pymupdf4llm
+pypdf
 python-multipart
 pytest
 pytest-asyncio
