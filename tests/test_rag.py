@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
-@pytest.mark.asyncio  # <--- THIS FIXES THE ASYNC ERROR
+@pytest.mark.asyncio
 async def test_rag_update_concurrency(client):
     mock_reviews = [MagicMock(page_content="Review 1")]
     mock_profs = [MagicMock(page_content="Prof Smith")]
