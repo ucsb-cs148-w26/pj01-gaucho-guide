@@ -56,6 +56,23 @@ COURSE_HEADER_RE = re.compile(
 )
 
 PASSING_OR_IN_PROGRESS_GRADES = {"A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "P", "S", "IP", "I", "W"}
+MAJOR_STOP_MARKERS = (
+    "COURSE",
+    "GRADE",
+    "ENRLCD",
+    "ATT UNIT",
+    "COMP UNIT",
+    "GPA UNIT",
+    "UNITPOINTS",
+    "QUARTER TOTAL",
+    "CUMULATIVE TOTAL",
+)
+MAJOR_ALIASES = {
+    "CMPSC": "Computer Science",
+    "CS": "Computer Science",
+    "COMP SCI": "Computer Science",
+    "COMPUTER SCIENCE": "Computer Science",
+}
 
 
 def _empty_result() -> dict:
@@ -184,7 +201,63 @@ def _extract_student_name(compact_text: str, student_id: str | None) -> str | No
     return None
 
 
-def _extract_major(compact_text: str) -> str | None:
+def _clean_major_candidate(raw_major: str) -> str | None:
+    major = _compact_whitespace(raw_major)
+
+    for marker in MAJOR_STOP_MARKERS:
+        idx = major.upper().find(marker)
+        if idx != -1:
+            major = major[:idx].strip()
+
+    major = re.split(
+        r"\b(?:Fall|Winter|Spring|Summer)\s+(?:19|20)\d{2}\b",
+        major,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    major = re.sub(r"\b(Department|Track|Option)\b.*$", "", major, flags=re.IGNORECASE).strip()
+    major = re.split(r"\b(?:Cumulative|Quarter)\s+Total\b", major, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+    major = re.sub(r"\b(Fall|Winter|Spring|Summer)\b.*$", "", major, flags=re.IGNORECASE).strip()
+    major = re.sub(r"[^A-Za-z&/\-\s]", " ", major)
+    major = _compact_whitespace(major)
+    if not major:
+        return None
+
+    bad_tokens = {"COURSE", "GRADE", "ENRLCD", "ATT", "COMP", "UNIT", "UNITPOINTS"}
+    tokens_upper = {t.upper() for t in major.split()}
+    if tokens_upper & bad_tokens:
+        return None
+
+    if len(major) < 3:
+        return None
+
+    normalized_key = major.upper()
+    if normalized_key in MAJOR_ALIASES:
+        return MAJOR_ALIASES[normalized_key]
+    return major.title()
+
+
+def _extract_major(lines: list[str], compact_text: str) -> str | None:
+    # Prefer line-based parsing to avoid accidental capture of table headers.
+    for line in lines:
+        m = re.search(r"\bMajor(?:\(s\))?[:\s\-]+(.+)$", line, re.IGNORECASE)
+        if m:
+            cleaned = _clean_major_candidate(m.group(1))
+            if cleaned:
+                return cleaned
+
+    for line in lines:
+        m = re.search(
+            r"\b(?:ENGR|L&S|COE|CLAS|BREN|EDUC|MUS|FINE)\s*/\s*(?:BS|BA|MS|PHD|Minor)\s*/\s*(.+)$",
+            line,
+            re.IGNORECASE,
+        )
+        if m:
+            cleaned = _clean_major_candidate(m.group(1))
+            if cleaned:
+                return cleaned
+
+    # Fallback to compact text when line-based signals are missing.
     patterns = [
         r"\bMajor(?:\(s\))?[:\s\-]+([A-Za-z][A-Za-z/&,\-\s]{2,80})\b",
         r"\b(?:ENGR|L&S|COE|CLAS|BREN|EDUC|MUS|FINE)\s*/\s*(?:BS|BA|MS|PHD|Minor)\s*/\s*([A-Za-z][A-Za-z&\-\s]{2,60})\b",
@@ -192,18 +265,9 @@ def _extract_major(compact_text: str) -> str | None:
     for pattern in patterns:
         m = re.search(pattern, compact_text, re.IGNORECASE)
         if m:
-            major = _compact_whitespace(m.group(1))
-            major = re.split(
-                r"\b(?:Fall|Winter|Spring|Summer)\s+(?:19|20)\d{2}\b",
-                major,
-                maxsplit=1,
-                flags=re.IGNORECASE,
-            )[0]
-            major = re.sub(r"\b(Department|Track|Option)\b.*$", "", major, flags=re.IGNORECASE).strip()
-            major = re.split(r"\b(?:Cumulative|Quarter)\s+Total\b", major, maxsplit=1, flags=re.IGNORECASE)[0].strip()
-            major = re.sub(r"\b(Fall|Winter|Spring|Summer)\b.*$", "", major, flags=re.IGNORECASE).strip()
-            if major:
-                return major.title()
+            cleaned = _clean_major_candidate(m.group(1))
+            if cleaned:
+                return cleaned
     return None
 
 
@@ -380,6 +444,11 @@ def _needs_fallback(parsed: dict) -> bool:
         return True
     if len(courses) < 3 and not parsed.get("student_id"):
         return True
+    major = parsed.get("major")
+    if isinstance(major, str):
+        major_upper = major.upper()
+        if any(marker in major_upper for marker in MAJOR_STOP_MARKERS):
+            return True
     return _score_parse(parsed) < 8
 
 
@@ -528,7 +597,7 @@ def _parse_markdown(raw_text: str) -> dict:
     out = _empty_result()
     out["student_id"] = _extract_student_id(compact_text)
     out["student_name"] = _extract_student_name(compact_text, out["student_id"])
-    out["major"] = _extract_major(compact_text)
+    out["major"] = _extract_major(lines, compact_text)
     out["courses"] = _extract_courses_via_enrollment_windows(compact_text)
 
     gpa, attempted, passed = _extract_cumulative(lines, compact_text)

@@ -1,6 +1,19 @@
 from backend.src.scrapers import transcript_scraper as ts
 
 
+def test_major_parsing_ignores_table_headers_artifacts():
+    raw = """
+    Name: DOE, JANE
+    Perm Number: 1234567
+    ENGR / BS / CMPSC Course GradeEnrlCd Att Unit Comp Unit Gpa Unitpoints
+    Fall 2023
+    CMPSC 16 - PROBLEM SOLVING I **A** 12345 4.0 4.0 4.0 16.0
+    """
+
+    parsed = ts._parse_markdown(raw)
+    assert parsed["major"] == "Computer Science"
+
+
 def test_parse_markdown_extracts_wrapped_rows():
     raw = """
     Unofficial Transcript
@@ -129,4 +142,3 @@ def test_parse_transcript_skips_gemini_when_local_is_good(monkeypatch):
     assert parsed["student_id"] == "1234567"
     assert len(parsed["courses"]) == 3
     assert llm_called["value"] is False
-
