@@ -1,10 +1,8 @@
 import os
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 import requests
-import json
 from typing import Optional
 
 load_dotenv(dotenv_path=".env", override=True)

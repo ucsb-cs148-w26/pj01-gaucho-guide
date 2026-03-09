@@ -1,3 +1,4 @@
+import asyncio
 import os
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request
@@ -12,7 +13,6 @@ from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_rea
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
 import json
-
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
@@ -30,6 +30,8 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 ENABLE_REVERSE_SEARCH = env_bool("ENABLE_REVERSE_SEARCH", False)
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
+UCSB_CATALOG_NAMESPACE = os.getenv("UCSB_CATALOG_NAMESPACE", "catalog_class_data")
+
 
 def to_text(x):
     if isinstance(x, str):
@@ -47,6 +49,7 @@ def to_text(x):
         if joined:
             return joined
     return json.dumps(x, ensure_ascii=False)
+
 
 def history_to_messages(history):
     if not history:
@@ -109,15 +112,26 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         docs = vector_manager.std_search(user_text, k=4)
         reddit_docs = []
+        catalog_docs = []
+
         if course_codes:
             try:
-                reddit_docs = vector_manager.vector_store.similarity_search(
-                    query=user_text,
-                    k=3,
-                    namespace=REDDIT_CLASS_NAMESPACE,
+                loop = asyncio.get_event_loop()
+
+                reddit_docs, catalog_docs = await asyncio.gather(
+                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search(
+                        query=user_text,
+                        k=3,
+                        namespace=REDDIT_CLASS_NAMESPACE,
+                    )),
+                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search(
+                        query=user_text,
+                        k=3,
+                        namespace=UCSB_CATALOG_NAMESPACE)),
                 )
             except Exception:
                 reddit_docs = []
+                catalog_docs = []
 
         context_sections = []
         if docs:
@@ -127,6 +141,11 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
         if reddit_docs:
             context_sections.append(
                 "REDDIT CLASS CONTEXT:\n" + "\n\n".join([d.page_content for d in reddit_docs])
+            )
+        if catalog_docs:
+            context_sections.append(
+                "UCSB CLASS ROSTER CONTEXT FOR CURRENT QUARTER: \n" + "\n\n".join(
+                    [d.page_content for d in catalog_docs])
             )
         context_text = "\n\n".join(context_sections)
 
@@ -173,7 +192,6 @@ REDDIT INGEST INFO:
 
         messages = [system_prompt] + history_msgs + [HumanMessage(content=rag_prompt)]
 
-        
         response = await llm.ainvoke(messages)
 
         chat_session_id = str(request.chat_session_id)

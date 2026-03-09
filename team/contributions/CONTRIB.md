@@ -57,7 +57,7 @@ The contributor graph shows what I contributed and can be see within the fronten
 
 Anjali
 
-### Ria
+## Ria
 
 Code Contributions:
 
@@ -77,7 +77,7 @@ Notes on GitHub Contributors Graph:
 
 The contributor graph reflects some of the coding work I contributed, particularly related to the Reddit scraping pipeline and backend support. Overall, while commit counts show some activity, they do not fully capture the collaborative work involved in backend integration, data preparation, and testing that helped the system function end-to-end.
 
-### Tej
+## Tej
 
 I contributed to the architecture, backend development, and deployment of the Gaucho Guider system.
 
@@ -92,3 +92,33 @@ During development I also migrated the embedding workflow from Ollama to Google�
 Additionally, I implemented the UCSB course API scraper that collects official course information and feeds it into the system’s knowledge base. This allowed Gaucho Guider to combine structured course metadata with unstructured student discussion data from Reddit.
 
 Beyond individual features, I helped guide several technical and architectural decisions throughout the project. I led discussions around the design of the RAG pipeline, model selection, and the overall system integration strategy to ensure the different components of the project worked together cohesively.
+
+## Samuel
+
+### Code Contributions:
+
+#### Core Backend Architecture: 
+Engineered the foundational backend framework from the ground up, establishing the primary RESTful API endpoints and creating the initial microservices architecture that the rest of the application relies on.
+
+#### Automated Data Ingestion Pipelines: 
+Designed and implemented robust data scraping workflows to aggregate critical academic information. This included building the initial UCSB Course Catalog scraper and the RateMyProfessors scraper to feed unstructured data into our system.
+
+#### Vector Database Engineering: 
+Architected the initial data schema and integration strategy for Pinecone, laying the structural groundwork for the chatbot’s Retrieval-Augmented Generation (RAG) capabilities.
+
+#### Cloud Infrastructure & Automation: 
+Designed and deployed a scheduled serverless pipeline utilizing Google Cloud Functions and Google Cloud Scheduler. This automated the continuous synchronization of the Pinecone vector database with real-time scraped data, ensuring the system remains up-to-date without manual intervention.
+
+#### Dynamic Visualization Generation: 
+Developed an automated logic pipeline utilizing Mermaid.ink to dynamically generate course flowchart PNGs, directly improving how users visualize prerequisite mapping.
+
+### Non-Coding Contributions:
+
+#### Technical Leadership & System Design: 
+Acted as the primary backend architect during the bootstrapping phase. I directed the technical strategy, oversaw major architectural decisions, and guided the team on how to integrate their individual modules (like Reddit data and external APIs) into the core infrastructure.
+
+#### Feasibility & Tech Stack Planning: 
+Evaluated and selected the initial backend tools and database schemas, ensuring the system would be scalable enough to support the frontend and data-ingestion requirements.
+
+### Notes on GitHub Contributors Graph:
+The contributor graph strongly reflects my heavy foundational work early in the project lifecycle. Because I bootstrapped the core backend architecture and cloud infrastructure, my commits involve large-scale structural additions and critical configurations. While others may have higher commit counts from smaller iterative tweaks later on, my contributions laid the essential blueprint and automated pipelines that allowed the rest of the team to build and deploy their features successfully.
