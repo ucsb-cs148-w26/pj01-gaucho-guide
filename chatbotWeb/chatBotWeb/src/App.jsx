@@ -50,6 +50,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
@@ -110,9 +119,7 @@ function App() {
   }, [getIdToken]);
 
   const getSessionId = () => {
-    if (!sessionIdRef.current) {
-      sessionIdRef.current = crypto.randomUUID();
-    }
+    if (!sessionIdRef.current) sessionIdRef.current = crypto.randomUUID();
     return sessionIdRef.current;
   };
 
@@ -136,6 +143,7 @@ function App() {
     } catch {
       return String(response);
     }
+    try { return JSON.stringify(r); } catch { return String(r); }
   };
 
   const parseMaybeJson = (value) => {
@@ -267,7 +275,6 @@ function App() {
 
   const handleSubmit = async () => {
     if (isThinking) return;
-
     const text = inputMessage.trim();
     if (!text && !file) {
       setError("Please type a message or attach a transcript to continue.");
@@ -332,12 +339,7 @@ function App() {
           message: text,
         }),
       });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `HTTP ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
       const data = await res.json();
       const assistantText = toText(data.response);
 

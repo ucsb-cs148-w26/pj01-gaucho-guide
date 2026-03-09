@@ -22,7 +22,7 @@ const toUserView = (u) => {
   if (!u) return null;
   return {
     email: u.email,
-    name: u.displayName || u.email?.split("@")[0] || "UCSB Student",
+    name: u.displayName || u.email?.split("@")[ 0] || "UCSB Student",
     picture:
       u.photoURL ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(
