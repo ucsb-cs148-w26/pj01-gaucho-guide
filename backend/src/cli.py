@@ -1,16 +1,22 @@
 import os
 import concurrent.futures
 import json
+import sys
 
 import click
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
+
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 from src.llm.llmswap import getLLM
 from src.managers.session_manager import SessionManager
 from src.managers.vector_manager import VectorManager
 from src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
 from src.scrapers.reddit_scraper import fetch_reddit_docs_for_cmpsc_catalog
+from src.scrapers.ucsbcatalog_scraper import UCSBCatalogClient
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
@@ -18,6 +24,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-3-flash-preview")
 UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
+UCSB_CATALOG_NAMESPACE = os.getenv("UCSB_CATALOG_NAMESPACE", "catalog_class_data")
 
 
 def normalize_response_content(content):
@@ -128,7 +135,7 @@ def start():
     """)
 
     click.secho(
-        "\n[GauchoGuider]: Type '/scrape' (RMP) or '/reddit' (Reddit corpus) to update knowledge, or just ask a question!",
+        "\n[GauchoGuider]: Type '/scrape' (RMP), '/reddit' (Reddit corpus), or '/catalog' (UCSB catalog) to update knowledge, or just ask a question!",
         fg="cyan")
 
     while True:
@@ -180,6 +187,25 @@ def start():
                     )
                 else:
                     click.secho("No Reddit docs found for current CMPSC harvest settings.", fg="yellow")
+                continue
+
+            if user_input.lower() in ['/catalog', '/catalog-upload', '/catalog_upload']:
+                click.secho("Scraping UCSB catalog classes...", fg="yellow")
+                try:
+                    ucsb_client = UCSBCatalogClient()
+                    catalog_docs = ucsb_client.get_all_classes_by_dept()
+                except Exception as e:
+                    click.secho(f"Error fetching catalog classes: {e}", fg="red")
+                    catalog_docs = None
+
+                if catalog_docs:
+                    vector_manager.ingest_data(catalog_docs, UCSB_CATALOG_NAMESPACE)
+                    click.secho(
+                        f"Catalog ingest complete: {len(catalog_docs)} docs into '{UCSB_CATALOG_NAMESPACE}'.",
+                        fg="green",
+                    )
+                else:
+                    click.secho("No catalog docs found for current settings.", fg="yellow")
                 continue
 
             # --- RAG Logic ---

@@ -34,6 +34,21 @@ const MoonIcon = () => (
   </svg>
 );
 
+const GoldLensIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <line x1="15.5" y1="15.5" x2="21" y2="21" />
+  </svg>
+);
+
 function Header({
   theme,
   toggleTheme,
@@ -82,6 +97,17 @@ function Header({
             }}
           />
           <span className="profile-text">Profile</span>
+        </button>
+
+        <button
+          type="button"
+          className="gold-lens-button"
+          aria-label="Gold Lens (coming soon)"
+          title="Gold Lens (coming soon)"
+        >
+          <span className="gold-lens-icon">
+            <GoldLensIcon />
+          </span>
         </button>
 
         {user && (

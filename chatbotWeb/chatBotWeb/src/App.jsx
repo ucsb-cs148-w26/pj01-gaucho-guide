@@ -462,6 +462,13 @@ function App() {
 
   return (
     <div className="app" data-theme={theme}>
+      <div
+        className={`sidebar-swipe-hint ${isSidebarOpen ? "hidden" : ""}`}
+        aria-hidden="true"
+      >
+        <span className="sidebar-swipe-arrow">›</span>
+      </div>
+
       <div className="hover-trigger" onMouseEnter={handleMouseEnterSidebar} />
 
       <div className="sidebar-wrapper" onMouseLeave={handleMouseLeaveSidebar}>
