@@ -7,7 +7,9 @@ from fastapi import APIRouter
 from src.managers.vector_manager import VectorManager
 from src.scrapers.rmp_scraper import get_school_reviews, get_school_professors
 from src.scrapers.reddit_scraper import fetch_reddit_docs_for_cmpsc_catalog
+from src.scrapers.ucsbcatalog_scraper import UCSBCatalogClient
 from src.models.rag_response_dto import RagResponseDTO
+
 
 router = APIRouter(prefix="/rag", tags=["rag", "Internal"])
 
@@ -17,18 +19,21 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME")
 UCSB_SCHOOL_ID = os.getenv("UCSB_SCHOOL_ID")
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
+UCSB_CATALOG_NAMESPACE = os.getenv("UCSB_CATALOG_NAMESPACE", "catalog_class_data")
 
 
 @router.post("/update", response_model=RagResponseDTO)
 async def update_llm_knowledge():
     vector_manager = VectorManager(PINECONE_API_KEY)
+    ucsb_client = UCSBCatalogClient()
 
     try:
         loop = asyncio.get_event_loop()
-        school_reviews, professors, reddit_result = await asyncio.gather(
+        school_reviews, professors, reddit_result, catalog_results = await asyncio.gather(
             loop.run_in_executor(None, get_school_reviews, UCSB_SCHOOL_ID),
             loop.run_in_executor(None, get_school_professors, UCSB_SCHOOL_ID),
             loop.run_in_executor(None, fetch_reddit_docs_for_cmpsc_catalog),
+            loop.run_in_executor(None, ucsb_client.get_all_classes_by_dept),
         )
     except Exception as e:
         return {"message": f"Scraping failed: {str(e)}", "model_name": MODEL_NAME}
@@ -40,6 +45,8 @@ async def update_llm_knowledge():
     reddit_docs, discovered_codes = reddit_result
     if reddit_docs:
         vector_manager.ingest_data(reddit_docs, REDDIT_CLASS_NAMESPACE)
+    if catalog_results:
+        vector_manager.ingest_data(catalog_results, UCSB_CATALOG_NAMESPACE)
 
     return {
         "message": (

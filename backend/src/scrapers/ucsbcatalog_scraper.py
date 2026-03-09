@@ -1,7 +1,9 @@
 import os
 import requests
-from typing import Dict, Any, Optional
+import datetime
+from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
+from langchain_core.documents import Document
 
 load_dotenv()
 
@@ -18,20 +20,41 @@ class UCSBCatalogClient:
             "Accept": "application/json"
         })
 
+    def _get_current_quarter_id(self) -> str:
+        """
+        Generates the UCSB quarter ID based on the current date.
+        Format: YYYYQ where Q is 1 (Winter), 2 (Spring), 3 (Summer), 4 (Fall).
+        """
+        now = datetime.datetime.now()
+        year = now.year
+        month = now.month
+
+        if 1 <= month <= 3:
+            quarter = "1"  # Winter
+        elif 4 <= month <= 6:
+            quarter = "2"  # Spring
+        elif 7 <= month <= 9:
+            quarter = "3"  # Summer
+        else:
+            quarter = "4"  # Fall
+
+        return f"{year}{quarter}"
+
     @staticmethod
     def _format_class_data(course: dict) -> str:
         """
         Helper function to flatten nested class JSON into a coherent RAG-friendly string.
+        Safely handles null/None values from the API.
         """
-        course_id = course.get("courseId", "").strip()
-        title = course.get("title", "").strip()
-        quarter = course.get("quarter", "")
-        desc = course.get("description", "").strip()
-        college = course.get("college", "")
+        course_id = (course.get("courseId") or "").strip()
+        title = (course.get("title") or "").strip()
+        quarter = (course.get("quarter") or "").strip()
+        desc = (course.get("description") or "").strip()
+        college = (course.get("college") or "").strip()
 
         units = course.get("unitsFixed")
         if units is None or units == 0:
-            units = f"{course.get('unitsVariableLow', 0)}-{course.get('unitsVariableHigh', 0)} (Variable)"
+            units = f"{course.get('unitsVariableLow') or 0}-{course.get('unitsVariableHigh') or 0} (Variable)"
 
         rag_text = f"Course: {course_id} - {title} ({quarter})\n"
         rag_text += f"College: {college} | Units: {units}\n"
@@ -41,24 +64,25 @@ class UCSBCatalogClient:
         if sections:
             rag_text += "Sections Availability and Details:\n"
             for sec in sections:
-                enroll_code = sec.get("enrollCode", "")
-                section_id = sec.get("section", "")
-                enrolled = sec.get("enrolledTotal", 0)
-                max_enroll = sec.get("maxEnroll", 0)
-
-                instructors = [inst.get("instructor", "").strip() for inst in sec.get("instructors", []) if
+                enroll_code = (sec.get("enrollCode") or "").strip()
+                section_id = (sec.get("section") or "").strip()
+                enrolled = sec.get("enrolledTotal") or 0
+                max_enroll = sec.get("maxEnroll") or 0
+                instructors = [(inst.get("instructor") or "").strip() for inst in sec.get("instructors", []) if
                                inst.get("instructor")]
                 instructor_str = ", ".join(instructors) if instructors else "TBD"
 
                 time_locs = []
                 for tl in sec.get("timeLocations", []):
-                    days = tl.get("days", "").strip()
-                    begin = tl.get("beginTime", "").strip()
-                    end = tl.get("endTime", "").strip()
-                    bldg = tl.get("building", "").strip()
-                    room = tl.get("room", "").strip()
+                    days = (tl.get("days") or "").strip()
+                    begin = (tl.get("beginTime") or "").strip()
+                    end = (tl.get("endTime") or "").strip()
+                    bldg = (tl.get("building") or "").strip()
+                    room = (tl.get("room") or "").strip()
+
                     if days or begin:
                         time_locs.append(f"{days} {begin}-{end} at {bldg} {room}")
+
                 time_str = " | ".join(time_locs) if time_locs else "TBA"
 
                 rag_text += f"  - Section: {section_id} (Code: {enroll_code}) | Instructor(s): {instructor_str} | Schedule: {time_str} | Capacity: {enrolled}/{max_enroll} Enrolled\n"
@@ -68,27 +92,82 @@ class UCSBCatalogClient:
     def get_class_by_enrollcode(self, quarter: str, enrollcode: str) -> str:
         """1) GET /v3/classes/{quarter}/{enrollcode}"""
         url = f"{self.base_url}/v3/classes/{quarter}/{enrollcode}"
-        # Notice we use self.session.get() instead of requests.get()
         response = self.session.get(url)
 
         if response.status_code == 200:
             return self._format_class_data(response.json())
         return f"Failed to fetch class. Status: {response.status_code}, Response: {response.text}"
 
-    def search_classes(self, params: Dict[str, Any]) -> str:
-        """2) GET /v3/classes/search"""
+    def get_all_classes_by_dept(self, dept_code: str = "") -> List[Document]:
+        """2) GET /v3/classes/search -> Converted to Langchain Documents (Paginated)"""
         url = f"{self.base_url}/v3/classes/search"
-        response = self.session.get(url, params=params)
+        quarter = self._get_current_quarter_id()
+        documents = []
 
-        if response.status_code == 200:
+        page_number = 1
+        page_size = 100
+
+        while True:
+            params = {}
+            if dept_code == "":
+                params = {
+                    "quarter": quarter,
+                    "pageSize": page_size,
+                    "pageNumber": page_number
+                }
+            else:
+                params = {
+                    "quarter": quarter,
+                    "deptCode": dept_code,
+                    "pageSize": page_size,
+                    "pageNumber": page_number
+                }
+
+            response = self.session.get(url, params=params)
+
+            if response.status_code != 200:
+                print(
+                    f"Failed to search classes on page {page_number}. Status: {response.status_code}, Response: {response.text}")
+                break
+
             data = response.json()
             classes = data.get("classes", [])
-            if not classes:
-                return "No classes found matching the search criteria."
 
-            formatted_classes = [self._format_class_data(c) for c in classes]
-            return "\n\n---\n\n".join(formatted_classes)
-        return f"Failed to search classes. Status: {response.status_code}, Response: {response.text}"
+            if not classes:
+                break
+
+            for course in classes:
+                total_enrolled = 0
+                total_max = 0
+                for sec in course.get("classSections", []):
+                    enrolled = sec.get("enrolledTotal")
+                    max_cap = sec.get("maxEnroll")
+
+                    total_enrolled += (enrolled if enrolled is not None else 0)
+                    total_max += (max_cap if max_cap is not None else 0)
+
+                remaining_availability = max(0, total_max - total_enrolled)
+
+                course_id = course.get("courseId", "").strip()
+                title = course.get("title", "").strip()
+                course_name = f"{course_id} - {title}"
+
+                page_content = self._format_class_data(course)
+                doc = Document(
+                    page_content=page_content,
+                    metadata={
+                        "course_name": course_name,
+                        "remaining_total_availability": remaining_availability
+                    }
+                )
+                documents.append(doc)
+
+            if len(classes) < page_size:
+                break
+
+            page_number += 1
+
+        return documents
 
     def get_class_section(self, quarter: str, enrollcode: str) -> str:
         """3) GET /v3/classsection/{quarter}/{enrollcode}"""
