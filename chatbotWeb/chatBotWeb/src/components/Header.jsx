@@ -34,7 +34,14 @@ const MoonIcon = () => (
   </svg>
 );
 
-function Header({ theme, toggleTheme, onProfileClick }) {
+function Header({
+  theme,
+  toggleTheme,
+  onProfileClick,
+  activePage,
+  onOpenChat,
+  onOpenFlowchart,
+}) {
   const { user, signOut } = useAuth();
 
   const avatarSrc = user?.picture
@@ -43,7 +50,25 @@ function Header({ theme, toggleTheme, onProfileClick }) {
 
   return (
     <div className="header">
-      <h1>Gaucho Guider</h1>
+      <div className="header-left">
+        <h1>Gaucho Guider</h1>
+        <div className="header-nav">
+          <button
+            type="button"
+            className={`header-nav-btn ${activePage === "chat" ? "active" : ""}`}
+            onClick={onOpenChat}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            className={`header-nav-btn ${activePage === "flowchart" ? "active" : ""}`}
+            onClick={onOpenFlowchart}
+          >
+            Flowchart
+          </button>
+        </div>
+      </div>
 
       <div className="header-controls">
         <button onClick={onProfileClick} className="profile-button" type="button">

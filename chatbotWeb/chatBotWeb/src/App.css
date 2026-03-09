@@ -836,3 +836,139 @@ input:checked + .slider:before {
 [data-theme="dark"] .profile-button:hover {
   background: rgba(254, 188, 17, 0.2);
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.header-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.header-nav-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-nav-btn.active {
+  background: var(--ucsb-gold);
+  border-color: var(--ucsb-gold);
+  color: var(--ucsb-navy);
+}
+
+.flowchart-page {
+  width: min(900px, 95vw);
+  margin: 0 auto;
+  padding: 18px 14px 28px;
+}
+
+.flowchart-title {
+  margin: 8px 0 10px;
+  font-size: 1.9rem;
+  color: var(--text-primary);
+}
+
+.flowchart-subtitle {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.flowchart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.flowchart-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flowchart-choose {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.flowchart-generate {
+  background: var(--ucsb-navy);
+  color: #fff;
+}
+
+[data-theme="dark"] .flowchart-generate {
+  background: var(--ucsb-gold);
+  color: var(--ucsb-navy);
+}
+
+.flowchart-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.flowchart-file,
+.flowchart-status {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+}
+
+.flowchart-status {
+  color: #0f766e;
+}
+
+.flowchart-result {
+  margin-top: 14px;
+}
+
+.flowchart-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+}
+
+.flowchart-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding: 14px 16px;
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .header h1 {
+    font-size: 1.45rem;
+  }
+
+  .header-controls {
+    gap: 10px;
+  }
+
+  .profile-text {
+    display: none;
+  }
+}

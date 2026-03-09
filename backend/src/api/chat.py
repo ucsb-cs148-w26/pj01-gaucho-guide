@@ -1,8 +1,6 @@
 import asyncio
 import os
 import json
-import base64
-from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Request, HTTPException
@@ -20,6 +18,7 @@ from src.scrapers.reddit_scraper import extract_course_codes
 from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
+from src.services.prereq_graph import generate_remaining_path_image
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
@@ -54,57 +53,17 @@ def generate_course_prereqs_graph(completed_courses: Optional[List[str]] = None)
                            Example: ["CMPSC 8", "CMPSC 16", "MATH 3A"]
     """
 
-    current_dir = Path(__file__).parent
-    json_path = current_dir.parent / "data" / "cmpsc_prereqs.json"
-
     try:
-        with open(json_path, "r") as f:
-            data = json.load(f)
+        image_url, message = generate_remaining_path_image(completed_courses)
     except FileNotFoundError:
-        return f"Error: Could not find prerequisite data at {json_path}."
+        return "Error: Prerequisite data file is missing on the server."
+    except Exception:
+        return "Error: Failed to generate the prerequisite graph."
 
-    # Normalize completed courses for accurate string matching
-    completed = []
-    if completed_courses:
-        completed = [c.upper().replace("CS ", "CMPSC ").strip() for c in completed_courses]
+    if not image_url:
+        return message
 
-    mermaid_markup = "graph TD\n"
-    nodes_added = 0
-
-    for course, details in data.items():
-        course_norm = course.upper().replace("CS ", "CMPSC ").strip()
-
-        # Skip the course entirely if it is already completed
-        if course_norm in completed:
-            continue
-
-        target = course.replace(" ", "_")
-        mermaid_markup += f'    {target}["{course}"]\n'
-        nodes_added += 1
-
-        prereqs = details.get("prereq_courses", [])
-        for prereq in prereqs:
-            clean_prereq = prereq.replace("OR ", "").replace("AND ", "").strip()
-            clean_prereq_norm = clean_prereq.upper().replace("CS ", "CMPSC ").strip()
-
-            if clean_prereq_norm in completed:
-                continue
-
-            source = clean_prereq.replace(" ", "_")
-
-            if clean_prereq not in data:
-                mermaid_markup += f'    {source}["{clean_prereq}"]\n'
-
-            mermaid_markup += f'    {source} --> {target}\n'
-
-    if nodes_added == 0:
-        return "The student has completed all courses in the prerequisite database. No graph needed."
-
-    graph_bytes = mermaid_markup.encode("utf8")
-    base64_string = base64.urlsafe_b64encode(graph_bytes).decode("ascii")
-    url = f"https://mermaid.ink/img/{base64_string}"
-
-    return f"Here is the remaining prerequisite path based on your completed courses:\n\n![CMPSC Prerequisites Graph]({url})"
+    return f"Here is the remaining prerequisite path based on your completed courses:\n\n![CMPSC Prerequisites Graph]({image_url})"
 
 
 def env_bool(name: str, default: bool = False) -> bool:

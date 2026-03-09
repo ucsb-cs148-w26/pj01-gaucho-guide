@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import InputContainer from "./components/InputContainer";
 import Sidebar from "./components/Sidebar";
 import ProfilePage from "./components/ProfilePage";
+import FlowchartPage from "./components/FlowchartPage";
 import SignIn from "./components/SignIn";
 import { useAuth } from "./contexts/AuthContext";
 import "./App.css";
@@ -16,6 +17,7 @@ function App() {
   const [inputMessage, setInputMessage] = useState("");
   const [theme, setTheme] = useState("light");
   const [showProfile, setShowProfile] = useState(false);
+  const [activePage, setActivePage] = useState("chat");
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -485,51 +487,60 @@ function App() {
           theme={theme}
           toggleTheme={toggleTheme}
           onProfileClick={() => setShowProfile(true)}
+          activePage={activePage}
+          onOpenChat={() => setActivePage("chat")}
+          onOpenFlowchart={() => setActivePage("flowchart")}
         />
 
         <div className="center-content">
-          {!hasSubmitted && (
-            <h2 className="prompt gold-text">How can I help you today?</h2>
-          )}
+          {activePage === "flowchart" ? (
+            <FlowchartPage apiUrl={apiUrl} getIdToken={getIdToken} />
+          ) : (
+            <>
+              {!hasSubmitted && (
+                <h2 className="prompt gold-text">How can I help you today?</h2>
+              )}
 
-          {hasSubmitted && (
-            <div className="chat-feed">
-              {messages.map((message, idx) => (
-                <div
-                  key={idx}
-                  className={`chat-bubble ${
-                    message.role === "user" ? "chat-user" : "chat-assistant"
-                  }`}
-                >
-                  {renderMessageContent(
-                    message.role === "assistant" &&
-                      typeof message.displayed === "string"
-                      ? message.displayed
-                      : message.content,
-                    message.role
+              {hasSubmitted && (
+                <div className="chat-feed">
+                  {messages.map((message, idx) => (
+                    <div
+                      key={idx}
+                      className={`chat-bubble ${
+                        message.role === "user" ? "chat-user" : "chat-assistant"
+                      }`}
+                    >
+                      {renderMessageContent(
+                        message.role === "assistant" &&
+                          typeof message.displayed === "string"
+                          ? message.displayed
+                          : message.content,
+                        message.role
+                      )}
+                    </div>
+                  ))}
+
+                  {isThinking && (
+                    <div className="chat-bubble chat-assistant chat-thinking">
+                      Thinking...
+                    </div>
                   )}
-                </div>
-              ))}
 
-              {isThinking && (
-                <div className="chat-bubble chat-assistant chat-thinking">
-                  Thinking...
+                  <div ref={bottomRef} />
                 </div>
               )}
 
-              <div ref={bottomRef} />
-            </div>
+              <InputContainer
+                file={file}
+                setFile={setFile}
+                inputMessage={inputMessage}
+                setInputMessage={setInputMessage}
+                error={error}
+                setError={setError}
+                onSubmit={handleSubmit}
+              />
+            </>
           )}
-
-          <InputContainer
-            file={file}
-            setFile={setFile}
-            inputMessage={inputMessage}
-            setInputMessage={setInputMessage}
-            error={error}
-            setError={setError}
-            onSubmit={handleSubmit}
-          />
         </div>
       </div>
     </div>
