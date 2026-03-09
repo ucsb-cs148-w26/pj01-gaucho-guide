@@ -1,0 +1,579 @@
+{
+  "CMPSC 5B": {
+    "prereq_raw": "Computer Science 5A with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 5A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-data-science-2"
+  },
+  "CMPSC 5A": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-data-science-1"
+  },
+  "CMPSC 8": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-computer-science"
+  },
+  "CMPSC 9": {
+    "prereq_raw": "Computer Science 8 or Engineering 3 with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 8"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/intermediate-python-programming"
+  },
+  "CMPSC 16": {
+    "prereq_raw": "Mathematics 3A or 2A with a grade of C or better (may be taken concurrently), CS 8 or Engineering 3 or ECE 3 with a grade of C or better, or significant prior programming experience.",
+    "prereq_courses": [
+      "MATH 3A",
+      "OR 2A",
+      "CS 8"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/problem-solving-computers-i"
+  },
+  "CMPSC 24": {
+    "prereq_raw": "Computer Science 16 with a grade of C or better; and Mathematics 3B or 2B with a grade of C or better (may be taken concurrently).",
+    "prereq_courses": [
+      "CMPSC 16",
+      "OR 2B"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/problem-solving-computers-ii"
+  },
+  "CMPSC 32": {
+    "prereq_raw": "Computer Science 24 with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 24"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/object-oriented-design-and-implementation"
+  },
+  "CMPSC 40": {
+    "prereq_raw": "Computer Science 16 with a grade of C or better and Mathematics 4A with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 16"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/foundations-computer-science"
+  },
+  "CMPSC 64": {
+    "prereq_raw": "Computer Science 16 with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 16"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-organization-and-logic-design"
+  },
+  "CMPSC 99": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/independent-studies-computer-science-0"
+  },
+  "CMPSC 100": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-teaching-methods-computer-science"
+  },
+  "CMPSC 110": {
+    "prereq_raw": "Computer Science 40 and Computer Science 32; consent of instructor.",
+    "prereq_courses": [
+      "CMPSC 40"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-research-computer-science"
+  },
+  "CMPSC 111": {
+    "prereq_raw": "Mathematics 4B with a grade of C or better; Mathematics 6A with a grade of C or better; Computer Science 24 with a grade of C or better.",
+    "prereq_courses": [
+      "MATH 4B",
+      "MATH 6A",
+      "CMPSC 24"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-computational-science"
+  },
+  "CMPSC 130A": {
+    "prereq_raw": "Computer Science 40 or Math 8 with a grade of C or better; Computer Science 9 or Computer Science 24 with a grade of C or better; Co-requisite PSTAT 120A or ECE 139; open to computer science, computer engineering, and electrical engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 40",
+      "CMPSC 9"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/data-structures-and-algorithms-i"
+  },
+  "CMPSC 130B": {
+    "prereq_raw": "Computer Science 130A.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/data-structures-and-algorithms-ii"
+  },
+  "CMPSC 132": {
+    "prereq_raw": "CS 24 and CS 40.",
+    "prereq_courses": [
+      "CS 24"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/algorithms-engineering"
+  },
+  "CMPSC 134": {
+    "prereq_raw": "Grade of B or better in CS130B",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/randomized-algorithms"
+  },
+  "CMPSC 138": {
+    "prereq_raw": "Computer Science 40 with a grade of C or better; open to computer science and computer engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 40"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/automata-and-formal-languages"
+  },
+  "CMPSC 140": {
+    "prereq_raw": "Mathematics 4A with a grade of C or better; CS32 or CS130A.",
+    "prereq_courses": [
+      "MATH 4A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/parallel-computing"
+  },
+  "CMPSC 148": {
+    "prereq_raw": "Computer Science 32 with a grade of C or better; open to Computer Science majors only.",
+    "prereq_courses": [
+      "CMPSC 32"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-science-project"
+  },
+  "CMPSC 153A": {
+    "prereq_raw": "Upper division standing in Computer Science, Computer Engineering or Electrical Engineering.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/hardwaresoftware-interface"
+  },
+  "CMPSC 154": {
+    "prereq_raw": "Computer Science 32 with a grade of C or better; Computer Science 64 with a grade of C or better.",
+    "prereq_courses": [
+      "CMPSC 32",
+      "CMPSC 64"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-architecture"
+  },
+  "CMPSC 156": {
+    "prereq_raw": "Computer Science 24 and 32 with a grade of C or better; open to Computer Science and Computer Engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 24",
+      "AND 32"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-applications-programming"
+  },
+  "CMPSC 160": {
+    "prereq_raw": "Computer Science 32; Computer Science 64 or Electrical Engineering 154A; Computer Science 130A; and Computer Science 138; open to computer science and computer engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 32",
+      "CMPSC 64",
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/translation-programming-languages"
+  },
+  "CMPSC 162": {
+    "prereq_raw": "Computer Science 130A and 138; open to computer science and computer engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 130A",
+      "AND 138"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/programming-languages"
+  },
+  "CMPSC 165A": {
+    "prereq_raw": "Computer Science 130A.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/artificial-intelligence"
+  },
+  "CMPSC 165B": {
+    "prereq_raw": "Computer Science 130A.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/machine-learning"
+  },
+  "CMPSC 170": {
+    "prereq_raw": "Computer Science 130A; and, Computer Science 154 or ECE 154A (may be taken concurrently); open to computer science, computer engineering or electrical engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 130A",
+      "CMPSC 154"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/operating-systems"
+  },
+  "CMPSC 171": {
+    "prereq_raw": "Computer Science 130A.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/distributed-systems"
+  },
+  "CMPSC 172": {
+    "prereq_raw": "Computer Science 130A. Open to computer science majors only or by consent of department.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/software-engineering"
+  },
+  "CMPSC 174A": {
+    "prereq_raw": "Computer Science 32; Computer Science 130A.",
+    "prereq_courses": [
+      "CMPSC 32",
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/fundamentals-database-systems"
+  },
+  "CMPSC 174B": {
+    "prereq_raw": "Computer Science 130B.",
+    "prereq_courses": [
+      "CMPSC 130B"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/design-and-implementation-techniques-database-systems"
+  },
+  "CMPSC 176A": {
+    "prereq_raw": "CMPSC 32 with a grade of C or better; PSTAT 120A or ECE 139; open to computer science, electrical engineering, and computer engineering majors only.",
+    "prereq_courses": [
+      "CMPSC 32",
+      "PSTAT 120A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-computer-communication-networks"
+  },
+  "CMPSC 176B": {
+    "prereq_raw": "Computer Science 176A.",
+    "prereq_courses": [
+      "CMPSC 176A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/network-computing"
+  },
+  "CMPSC 176C": {
+    "prereq_raw": "Computer Science 176A",
+    "prereq_courses": [
+      "CMPSC 176A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-internet-computing"
+  },
+  "CMPSC 177": {
+    "prereq_raw": "Computer Science 170 (may be taken concurrently).",
+    "prereq_courses": [
+      "CMPSC 170"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-security"
+  },
+  "CMPSC 178": {
+    "prereq_raw": "Computer Science 24 with a grade of C or better; Computer Science 40 with a grade of C or better; and PSTAT 120A or ECE 139 or permission of instructor.",
+    "prereq_courses": [
+      "CMPSC 24",
+      "CMPSC 40"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-cryptography"
+  },
+  "CMPSC 180": {
+    "prereq_raw": "Computer Science 130A or consent of instructor.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-graphics"
+  },
+  "CMPSC 181": {
+    "prereq_raw": "Upper-division standing in Computer Science Department.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-computer-vision"
+  },
+  "CMPSC 184": {
+    "prereq_raw": "CS 56 or 156; CS 130A.",
+    "prereq_courses": [
+      "CS 56",
+      "OR 156",
+      "CS 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/mobile-application-development"
+  },
+  "CMPSC 185": {
+    "prereq_raw": "Upper division standing; Open to computer science, computer engineering, and electrical engineering majors.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/human-computer-interaction"
+  },
+  "CMPSC 186": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/internet-things-iot-systems"
+  },
+  "CMPSC 188": {
+    "prereq_raw": "Good programming skills and knowledge of data structure (e.g., CS 130A)",
+    "prereq_courses": [
+      "CS 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/introduction-natural-language-processing"
+  },
+  "CMPSC 189A": {
+    "prereq_raw": "CS 56; Senior standing in computer engineering, computer science, or electrical engineering; consent of instructor.",
+    "prereq_courses": [
+      "CS 56"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/senior-computer-systems-project"
+  },
+  "CMPSC 189B": {
+    "prereq_raw": "CMPSC 172 or CMPSC 189A; Senior standing in computer engineering, computer science, or electrical engineering; consent of instructor.",
+    "prereq_courses": [
+      "CMPSC 172"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/senior-computer-systems-project-0"
+  },
+  "CMPSC 192": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/projects-computer-science"
+  },
+  "CMPSC 193": {
+    "prereq_raw": "Consent of instructor and department chair.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/internship-industry"
+  },
+  "CMPSC 196": {
+    "prereq_raw": "Students must: (1) have attained upper-division standing (2) have a minimum3.0 grade-point average for preceding three quarters, (3) have consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/undergraduate-research"
+  },
+  "CMPSC 199": {
+    "prereq_raw": "Upper-division standing; students must have completed at least two upper- division courses in computer science. May be repeated with consent of chair.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/independent-studies-computer-science"
+  },
+  "CMPSC 209": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/logic-and-applications-computer-science"
+  },
+  "CMPSC 211A": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/matrix-analysis-and-computation"
+  },
+  "CMPSC 211B": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/numerical-simulation"
+  },
+  "CMPSC 211C": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/numerical-solution-partial-differential-equations-finite"
+  },
+  "CMPSC 211D": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/numerical-solution-partial-differential-equations-finite-0"
+  },
+  "CMPSC 216": {
+    "prereq_raw": "CMPSC 211C or CH E 211C or ECE 210C or ME 210C.",
+    "prereq_courses": [
+      "CMPSC 211C"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/level-set-methods"
+  },
+  "CMPSC 219": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/sparse-matrix-algorithms"
+  },
+  "CMPSC 220": {
+    "prereq_raw": "Computer Science 186.",
+    "prereq_courses": [
+      "CMPSC 186"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/theory-computation-and-complexity"
+  },
+  "CMPSC 225": {
+    "prereq_raw": "ECE 139 or equivalent, or PSTAT 120A-B.",
+    "prereq_courses": [
+      "ECE 139"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/information-theory"
+  },
+  "CMPSC 230": {
+    "prereq_raw": "Computer Science 130A-B.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/approximations-np-completeness-and-algorithms"
+  },
+  "CMPSC 231": {
+    "prereq_raw": "Computer Science 130B.",
+    "prereq_courses": [
+      "CMPSC 130B"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/topics-combinatorial-algorithms"
+  },
+  "CMPSC 235": {
+    "prereq_raw": "Computer Science 130A-B.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computational-geometry"
+  },
+  "CMPSC 240A": {
+    "prereq_raw": "Computer Science 154 and 160.",
+    "prereq_courses": [
+      "CMPSC 154",
+      "AND 160"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/applied-parallel-computing"
+  },
+  "CMPSC 254": {
+    "prereq_raw": "CMPSC 154 or ECE 154.",
+    "prereq_courses": [
+      "CMPSC 154"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-computer-architecture"
+  },
+  "CMPSC 260": {
+    "prereq_raw": "Computer Science 160 and 162.",
+    "prereq_courses": [
+      "CMPSC 160",
+      "AND 162"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-program-analysis"
+  },
+  "CMPSC 266": {
+    "prereq_raw": "Computer Science 130A-B; Computer Science 186.",
+    "prereq_courses": [
+      "CMPSC 130A",
+      "CMPSC 186"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/formal-specification-and-verification"
+  },
+  "CMPSC 267": {
+    "prereq_raw": "Computer Science 130A-B and 138.",
+    "prereq_courses": [
+      "CMPSC 130A"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/automated-verification"
+  },
+  "CMPSC 270": {
+    "prereq_raw": "Computer Science 170",
+    "prereq_courses": [
+      "CMPSC 170"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/operating-systems-0"
+  },
+  "CMPSC 271": {
+    "prereq_raw": "Computer Science 170.",
+    "prereq_courses": [
+      "CMPSC 170"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-distributed-systems"
+  },
+  "CMPSC 272": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/software-engineering-0"
+  },
+  "CMPSC 273": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/data-and-knowledge-bases"
+  },
+  "CMPSC 274": {
+    "prereq_raw": "Computer Science 170.",
+    "prereq_courses": [
+      "CMPSC 170"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-database-systems"
+  },
+  "CMPSC 276": {
+    "prereq_raw": "Computer Science 176A or 176B.",
+    "prereq_courses": [
+      "CMPSC 176A",
+      "OR 176B"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-networking"
+  },
+  "CMPSC 279": {
+    "prereq_raw": "Computer Science 177.",
+    "prereq_courses": [
+      "CMPSC 177"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-security"
+  },
+  "CMPSC 280": {
+    "prereq_raw": "Computer Science 180.",
+    "prereq_courses": [
+      "CMPSC 180"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-graphics-0"
+  },
+  "CMPSC 281B": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-topics-computer-vision"
+  },
+  "CMPSC 284": {
+    "prereq_raw": "Computer Science 176A or 176B.",
+    "prereq_courses": [
+      "CMPSC 176A",
+      "OR 176B"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/mobile-computing"
+  },
+  "CMPSC 285": {
+    "prereq_raw": "Computer Graphics desired but not necessary.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-image-synthesis"
+  },
+  "CMPSC 291": {
+    "prereq_raw": "Consent of instructor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/special-topics-computer-science-0"
+  },
+  "CMPSC 291D": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/cmpsc-291d-database-and-information-systems"
+  },
+  "CMPSC 293S": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/advanced-compiler-optimizations"
+  },
+  "CMPSC 501": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/techniques-computer-science-teaching"
+  },
+  "CMPSC 502": {
+    "prereq_raw": "Computer Science 501.",
+    "prereq_courses": [
+      "CMPSC 501"
+    ],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/teaching-computer-science"
+  },
+  "CMPSC 592": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/group-studies-controls-dynamical-systems-and-computation"
+  },
+  "CMPSC 593": {
+    "prereq_raw": "Consent of instructor or department chair.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/computer-science-graduate-tutorial"
+  },
+  "CMPSC 594": {
+    "prereq_raw": "Consent of instructor and advisor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/seminar-computer-science"
+  },
+  "CMPSC 596": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/directed-research"
+  },
+  "CMPSC 597": {
+    "prereq_raw": null,
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/individual-studies-master-science-comprehensive-examinations"
+  },
+  "CMPSC 598": {
+    "prereq_raw": "Consent of graduate advisor.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/masters-thesis-research-and-preparation"
+  },
+  "CMPSC 599": {
+    "prereq_raw": "Consent of chair of student's doctoral committee.",
+    "prereq_courses": [],
+    "url": "https://www.cs.ucsb.edu/education/courses/course-descriptions/phd-dissertation-research-and-preparation"
+  }
+}
