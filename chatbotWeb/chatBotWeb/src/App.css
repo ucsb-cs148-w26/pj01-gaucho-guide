@@ -881,6 +881,26 @@ input:checked + .slider .icon-moon { opacity: 1; }
   line-height: 1.3;
   font-weight: 700;
 }
+
+.assistant-image-wrap {
+  margin-top: 0.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.assistant-image {
+  display: block;
+  max-width: min(640px, 72vw);
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.assistant-image-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+}
 /* Profile Button Styles - Add these to your existing App.css */
 
 .signin-center {
@@ -913,6 +933,35 @@ input:checked + .slider .icon-moon { opacity: 1; }
   color: var(--ucsb-navy);
 }
 
+.gold-lens-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(254, 188, 17, 0.55);
+  background: rgba(254, 188, 17, 0.16);
+  color: var(--ucsb-gold);
+  cursor: default;
+}
+
+.gold-lens-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+[data-theme="dark"] .gold-lens-button {
+  background: rgba(254, 188, 17, 0.24);
+  border-color: rgba(254, 188, 17, 0.7);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 [data-theme="dark"] .signin-title {
   color: var(--ucsb-gold);
 }
@@ -953,6 +1002,186 @@ input:checked + .slider .icon-moon { opacity: 1; }
   transform: translateY(-2px);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.header-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.header-nav-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-nav-btn.active {
+  background: var(--ucsb-gold);
+  border-color: var(--ucsb-gold);
+  color: var(--ucsb-navy);
+}
+
+.sidebar-swipe-hint {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 52px;
+  border-radius: 0 10px 10px 0;
+  background: rgba(0, 54, 96, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-left: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-swipe-hint.hidden {
+  opacity: 0;
+}
+
+.sidebar-swipe-arrow {
+  color: var(--ucsb-gold);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+[data-theme="dark"] .sidebar-swipe-hint {
+  background: rgba(254, 188, 17, 0.2);
+  border-color: rgba(254, 188, 17, 0.45);
+}
+
+.flowchart-page {
+  width: min(900px, 95vw);
+  margin: 0 auto;
+  padding: 18px 14px 28px;
+}
+
+.flowchart-title {
+  margin: 8px 0 10px;
+  font-size: 1.9rem;
+  color: var(--text-primary);
+}
+
+.flowchart-subtitle {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.flowchart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.flowchart-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flowchart-choose {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.flowchart-generate {
+  background: var(--ucsb-navy);
+  color: #fff;
+}
+
+[data-theme="dark"] .flowchart-generate {
+  background: var(--ucsb-gold);
+  color: var(--ucsb-navy);
+}
+
+.flowchart-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.flowchart-file,
+.flowchart-status {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+}
+
+.flowchart-status {
+  color: #0f766e;
+}
+
+.flowchart-result {
+  margin-top: 14px;
+}
+
+.flowchart-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+}
+
+.flowchart-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding: 14px 16px;
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .header h1 {
+    font-size: 1.45rem;
+  }
+
+  .header-controls {
+    gap: 10px;
+  }
+
+  .profile-text {
+    display: none;
+  }
+
+  .gold-lens-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sidebar-swipe-hint {
+    width: 14px;
+    height: 44px;
+  }
+}
 .signin-notice {
   margin: 4px 0 0;
   font-size: 0.78rem;

@@ -15,3 +15,6 @@ venv/
 *.db
 *.csv
 *.json
+
+#un-ignored files
+!cmpsc_prereqs.json

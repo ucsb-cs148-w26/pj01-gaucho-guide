@@ -34,7 +34,29 @@ const MoonIcon = () => (
   </svg>
 );
 
-function Header({ theme, toggleTheme, onProfileClick }) {
+const GoldLensIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <line x1="15.5" y1="15.5" x2="21" y2="21" />
+  </svg>
+);
+
+function Header({
+  theme,
+  toggleTheme,
+  onProfileClick,
+  activePage,
+  onOpenChat,
+  onOpenFlowchart,
+}) {
   const { user, signOut } = useAuth();
 
   const avatarSrc = user?.picture
@@ -43,7 +65,25 @@ function Header({ theme, toggleTheme, onProfileClick }) {
 
   return (
     <div className="header">
-      <h1>Gaucho Guider</h1>
+      <div className="header-left">
+        <h1>Gaucho Guider</h1>
+        <div className="header-nav">
+          <button
+            type="button"
+            className={`header-nav-btn ${activePage === "chat" ? "active" : ""}`}
+            onClick={onOpenChat}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            className={`header-nav-btn ${activePage === "flowchart" ? "active" : ""}`}
+            onClick={onOpenFlowchart}
+          >
+            Flowchart
+          </button>
+        </div>
+      </div>
 
       <div className="header-controls">
         <button onClick={onProfileClick} className="profile-button" type="button">
@@ -57,6 +97,17 @@ function Header({ theme, toggleTheme, onProfileClick }) {
             }}
           />
           <span className="profile-text">Profile</span>
+        </button>
+
+        <button
+          type="button"
+          className="gold-lens-button"
+          aria-label="Gold Lens (coming soon)"
+          title="Gold Lens (coming soon)"
+        >
+          <span className="gold-lens-icon">
+            <GoldLensIcon />
+          </span>
         </button>
 
         {user && (
