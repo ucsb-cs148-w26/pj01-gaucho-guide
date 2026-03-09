@@ -816,6 +816,30 @@ input:checked + .slider:before {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+.gold-lens-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(254, 188, 17, 0.55);
+  background: rgba(254, 188, 17, 0.16);
+  color: var(--ucsb-gold);
+  cursor: default;
+}
+
+.gold-lens-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+[data-theme="dark"] .gold-lens-button {
+  background: rgba(254, 188, 17, 0.24);
+  border-color: rgba(254, 188, 17, 0.7);
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -863,6 +887,41 @@ input:checked + .slider:before {
   background: var(--ucsb-gold);
   border-color: var(--ucsb-gold);
   color: var(--ucsb-navy);
+}
+
+.sidebar-swipe-hint {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 52px;
+  border-radius: 0 10px 10px 0;
+  background: rgba(0, 54, 96, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-left: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-swipe-hint.hidden {
+  opacity: 0;
+}
+
+.sidebar-swipe-arrow {
+  color: var(--ucsb-gold);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+[data-theme="dark"] .sidebar-swipe-hint {
+  background: rgba(254, 188, 17, 0.2);
+  border-color: rgba(254, 188, 17, 0.45);
 }
 
 .flowchart-page {
@@ -970,5 +1029,15 @@ input:checked + .slider:before {
 
   .profile-text {
     display: none;
+  }
+
+  .gold-lens-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sidebar-swipe-hint {
+    width: 14px;
+    height: 44px;
   }
 }
