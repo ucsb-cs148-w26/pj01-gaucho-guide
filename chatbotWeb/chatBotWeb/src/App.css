@@ -642,6 +642,29 @@ input:checked + .slider .icon-moon { opacity: 1; }
   margin-top: auto; font-size: 12px; color: #888;
   text-align: center; border-top: 1px solid var(--input-border); padding-top: 15px;
 }
+.new-chat-btn:hover { background: var(--ucsb-navy); color: white; }
+[data-theme="dark"] .new-chat-btn { border-color: var(--ucsb-gold); color: var(--ucsb-gold); }
+[data-theme="dark"] .new-chat-btn:hover { background: var(--ucsb-gold); color: var(--ucsb-navy); }
+
+.history-label {
+  font-size: 12px; color: #888; margin-bottom: 10px;
+  font-weight: 700; text-transform: uppercase;
+}
+.sidebar-content ul { list-style: none; padding: 0; margin: 0; }
+
+.history-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: 8px; cursor: pointer;
+  color: var(--text-primary); font-size: 14px;
+  transition: background 0.2s;
+}
+.history-item:hover { background: rgba(0,0,0,0.05); }
+[data-theme="dark"] .history-item:hover { background: rgba(255,255,255,0.1); }
+
+.sidebar-footer {
+  margin-top: auto; font-size: 12px; color: #888;
+  text-align: center; border-top: 1px solid var(--input-border); padding-top: 15px;
+}
 
 /* =========================================
    7. LOADING STATE
@@ -760,6 +783,9 @@ input:checked + .slider .icon-moon { opacity: 1; }
 .submit-btn { background: var(--ucsb-navy); color: var(--ucsb-gold); box-shadow: 0 4px 10px var(--shadow-color); }
 .submit-btn:hover { transform: scale(1.1); background-color: var(--ucsb-navy-light); }
 .submit-btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; opacity: 0.8; }
+
+[data-theme="dark"] .submit-btn { background: var(--ucsb-gold); color: var(--ucsb-navy); }
+
 
 [data-theme="dark"] .submit-btn { background: var(--ucsb-gold); color: var(--ucsb-navy); }
 
@@ -931,6 +957,8 @@ input:checked + .slider .icon-moon { opacity: 1; }
   font-size: 1.9rem;
   font-weight: 700;
   color: var(--ucsb-navy);
+}
+
 }
 
 .gold-lens-button {
@@ -1181,6 +1209,12 @@ input:checked + .slider .icon-moon { opacity: 1; }
     width: 14px;
     height: 44px;
   }
+}
+.signin-notice {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
 }
 .signin-notice {
   margin: 4px 0 0;
