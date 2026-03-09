@@ -28,7 +28,7 @@ Output JSON schema
 
 Usage
 -----
-  from backend.src.scrapers.transcript_scraper import parse_transcript
+  from src.scrapers.transcript_scraper import parse_transcript
 
   with open("transcript.pdf", "rb") as f:
       result = parse_transcript(f.read())

@@ -13,13 +13,13 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 
-from backend.src.managers.session_manager import SessionManager
-from backend.src.managers.firebase_chat_history_manager import FirebaseChatHistoryManager
-from backend.src.managers.vector_manager import VectorManager
-from backend.src.scrapers.reddit_scraper import extract_course_codes
-from backend.src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
-from backend.src.models.chat_request_dto import ChatRequestDTO
-from backend.src.models.chat_response_dto import ChatResponseDTO
+from src.managers.session_manager import SessionManager
+from src.managers.firebase_chat_history_manager import FirebaseChatHistoryManager
+from src.managers.vector_manager import VectorManager
+from src.scrapers.reddit_scraper import extract_course_codes
+from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
+from src.models.chat_request_dto import ChatRequestDTO
+from src.models.chat_response_dto import ChatResponseDTO
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
