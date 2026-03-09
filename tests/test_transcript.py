@@ -103,7 +103,9 @@ def test_parse_transcript_rejects_non_pdf(client):
 
 
 def test_parse_transcript_handles_parse_error(client):
-    with patch("backend.src.api.transcript.parse_transcript", side_effect=Exception("bad pdf")):
+    with patch("backend.src.api.transcript.parse_transcript", side_effect=Exception("bad pdf")), \
+         patch("backend.src.api.transcript.SessionManager") as MockSM:
+        sm_instance = MockSM.return_value
         fake_pdf = io.BytesIO(b"%PDF-1.4 corrupt")
         response = client.post(
             "/transcript/parse",
@@ -112,6 +114,7 @@ def test_parse_transcript_handles_parse_error(client):
         )
         assert response.status_code == 422
         assert "Failed to parse transcript" in response.json()["detail"]
+        sm_instance.clear_transcript.assert_called_once_with("test-session-123")
 
 
 def test_clear_transcript(client):

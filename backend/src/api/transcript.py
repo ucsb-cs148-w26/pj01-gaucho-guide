@@ -26,6 +26,8 @@ async def upload_and_parse_transcript(
     session_id: str = Form(...),
     file: UploadFile = File(...),
 ):
+    session_manager = SessionManager()
+
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
@@ -36,9 +38,10 @@ async def upload_and_parse_transcript(
     try:
         parsed = parse_transcript(pdf_bytes)
     except Exception as e:
+        # Prevent stale transcript context from being reused after a failed upload.
+        session_manager.clear_transcript(session_id)
         raise HTTPException(status_code=422, detail=f"Failed to parse transcript: {str(e)}")
 
-    session_manager = SessionManager()
     session_manager.save_transcript(session_id, parsed)
 
     return TranscriptResponse(

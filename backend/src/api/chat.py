@@ -30,6 +30,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 
 ENABLE_REVERSE_SEARCH = env_bool("ENABLE_REVERSE_SEARCH", False)
 REDDIT_CLASS_NAMESPACE = os.getenv("REDDIT_CLASS_NAMESPACE", "reddit_class_data")
+IN_PROGRESS_GRADES = {"IP", "I", "IN PROGRESS", "IN-PROGRESS"}
 
 def to_text(x):
     if isinstance(x, str):
@@ -67,6 +68,35 @@ def history_to_messages(history):
         else:
             out.append(AIMessage(content=str(content)))
     return out
+
+
+def _is_in_progress_grade(grade_value) -> bool:
+    if grade_value is None:
+        return True
+    grade_text = str(grade_value).strip().upper()
+    return grade_text in IN_PROGRESS_GRADES or grade_text == ""
+
+
+def _build_in_progress_course_list(transcript_data: dict) -> list[dict]:
+    courses = transcript_data.get("courses", [])
+    if not isinstance(courses, list):
+        return []
+
+    in_progress = []
+    for course in courses:
+        if not isinstance(course, dict):
+            continue
+        if not _is_in_progress_grade(course.get("grade")):
+            continue
+        in_progress.append(
+            {
+                "quarter": course.get("quarter"),
+                "course_code": course.get("course_code"),
+                "course_title": course.get("course_title"),
+                "grade": course.get("grade"),
+            }
+        )
+    return in_progress
 
 
 def get_user_email_from_request(http_request: Request) -> str | None:
@@ -133,9 +163,19 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
         transcript_data = session_manager.load_transcript(str(request.chat_session_id))
         transcript_section = ""
         if transcript_data:
+            in_progress_courses = _build_in_progress_course_list(transcript_data)
             transcript_section = f"""
 
 STUDENT TRANSCRIPT (use this to personalize recommendations — do NOT recommend courses the student has already passed):
+CURRENT IN-PROGRESS COURSES (authoritative for "current schedule"):
+{json.dumps(in_progress_courses, indent=2)}
+
+IMPORTANT:
+- Treat only the courses listed in CURRENT IN-PROGRESS COURSES as the student's current enrollment.
+- Do not claim a student is currently taking courses not listed there.
+- If this list is empty, state that current enrollment is unknown and ask for clarification.
+
+FULL TRANSCRIPT JSON:
 {json.dumps(transcript_data, indent=2)}
 """
 
@@ -144,7 +184,7 @@ You are GauchoGuider, an academic-focused UCSB advising assistant.
 
 RULES:
 1. Prioritize educational outcomes: course planning, prerequisites, degree progress, GPA strategy, study tactics, and graduation readiness.
-2. Use the student transcript (if provided) to personalize advice and avoid recommending courses the student already completed.
+2. Use the student transcript (if provided) to personalize advice and avoid recommending courses the student already completed. Treat current enrollment strictly from CURRENT IN-PROGRESS COURSES only.
 3. Use the provided RAG context first. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
 4. If details are missing or uncertain, use reverse search to verify facts.
 5. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
