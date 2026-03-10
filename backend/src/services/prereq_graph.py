@@ -1,11 +1,17 @@
-import base64
 import json
+import os
 import re
 from pathlib import Path
 from typing import Iterable
 
+try:
+    import requests
+except Exception:  # pragma: no cover - optional dependency guard
+    requests = None
+
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cmpsc_prereqs.json"
+DEFAULT_FLOWCHART_IMAGE_MODEL = "gemini-2.5-flash-image-preview"
 
 INCOMPLETE_OR_FAILING_GRADES = {
     "",
@@ -75,23 +81,15 @@ def extract_completed_courses_from_transcript(transcript_data: dict) -> list[str
     return sorted(completed)
 
 
-def _node_id(label: str) -> str:
-    safe = re.sub(r"[^A-Za-z0-9_]+", "_", label.strip())
-    safe = safe.strip("_")
-    if not safe:
-        safe = "node"
-    if safe[0].isdigit():
-        safe = f"node_{safe}"
-    return safe
-
-
 def _clean_prereq_label(prereq: str) -> str:
     cleaned = prereq.strip()
     cleaned = re.sub(r"^(OR|AND)\s+", "", cleaned, flags=re.IGNORECASE)
     return cleaned.strip()
 
 
-def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
+def build_remaining_graph_spec(
+    completed_courses: Iterable[str] | None = None,
+) -> tuple[list[str], list[tuple[str, str]]]:
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -101,9 +99,16 @@ def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
         if isinstance(code, str) and code.strip()
     }
 
-    mermaid_markup = ["graph TD"]
-    nodes_added = 0
-    external_nodes: set[str] = set()
+    nodes: list[str] = []
+    seen_nodes: set[str] = set()
+    edges: list[tuple[str, str]] = []
+    seen_edges: set[tuple[str, str]] = set()
+
+    def add_node(label: str):
+        if label in seen_nodes:
+            return
+        seen_nodes.add(label)
+        nodes.append(label)
 
     for course, details in data.items():
         course_norm = normalize_course_code(course)
@@ -111,9 +116,7 @@ def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
         if course_norm in completed:
             continue
 
-        target = _node_id(course)
-        mermaid_markup.append(f'    {target}["{course}"]')
-        nodes_added += 1
+        add_node(course)
 
         prereqs = details.get("prereq_courses", [])
         for prereq in prereqs:
@@ -128,24 +131,117 @@ def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
             if clean_prereq_norm in completed:
                 continue
 
-            source = _node_id(clean_prereq)
+            add_node(clean_prereq)
+            edge = (clean_prereq, course)
+            if edge not in seen_edges:
+                seen_edges.add(edge)
+                edges.append(edge)
 
-            if clean_prereq not in data and source not in external_nodes:
-                mermaid_markup.append(f'    {source}["{clean_prereq}"]')
-                external_nodes.add(source)
-
-            mermaid_markup.append(f"    {source} --> {target}")
-
-    if nodes_added == 0:
-        return ""
-
-    return "\n".join(mermaid_markup) + "\n"
+    return nodes, edges
 
 
-def mermaid_image_url(mermaid_markup: str) -> str:
-    graph_bytes = mermaid_markup.encode("utf-8")
-    encoded = base64.urlsafe_b64encode(graph_bytes).decode("ascii")
-    return f"https://mermaid.ink/img/{encoded}"
+def build_flowchart_image_prompt(nodes: list[str], edges: list[tuple[str, str]]) -> str:
+    graph_payload = {
+        "nodes": nodes,
+        "edges": [{"from": src, "to": dst} for src, dst in edges],
+    }
+    return (
+        "Create a clean, readable prerequisite flowchart image for UCSB Computer Science.\n"
+        "Requirements:\n"
+        "- White background.\n"
+        "- Top-to-bottom flow.\n"
+        "- Rounded rectangles for course nodes.\n"
+        "- Directed arrows from prerequisite to dependent course.\n"
+        "- Use every node and edge exactly as provided.\n"
+        "- Do not add, remove, or rename courses.\n"
+        "- Keep all text legible.\n"
+        "- Title: Remaining UCSB CS Prerequisite Flowchart.\n\n"
+        "Graph data (JSON):\n"
+        f"{json.dumps(graph_payload, indent=2)}"
+    )
+
+
+def _extract_image_from_gemini_response(payload: dict) -> str | None:
+    candidates = payload.get("candidates")
+    if not isinstance(candidates, list):
+        return None
+
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        content = candidate.get("content", {})
+        if not isinstance(content, dict):
+            continue
+        parts = content.get("parts", [])
+        if not isinstance(parts, list):
+            continue
+        for part in parts:
+            if not isinstance(part, dict):
+                continue
+
+            inline_data = part.get("inlineData") or part.get("inline_data")
+            if isinstance(inline_data, dict):
+                b64_data = inline_data.get("data")
+                mime = inline_data.get("mimeType") or inline_data.get("mime_type") or "image/png"
+                if isinstance(b64_data, str) and b64_data:
+                    return f"data:{mime};base64,{b64_data}"
+
+            file_data = part.get("fileData") or part.get("file_data")
+            if isinstance(file_data, dict):
+                uri = file_data.get("fileUri") or file_data.get("file_uri") or file_data.get("uri")
+                if isinstance(uri, str) and uri.startswith("http"):
+                    return uri
+
+    return None
+
+
+def generate_flowchart_image_with_gemini(prompt: str) -> str:
+    if requests is None:
+        raise RuntimeError("The requests dependency is not available.")
+
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing GOOGLE_API_KEY or GEMINI_API_KEY for Gemini image generation.")
+
+    model = os.getenv("FLOWCHART_GEMINI_IMAGE_MODEL", DEFAULT_FLOWCHART_IMAGE_MODEL)
+    endpoint = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        f"?key={api_key}"
+    )
+    req_payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.2,
+            "responseModalities": ["TEXT", "IMAGE"],
+        },
+    }
+
+    try:
+        res = requests.post(endpoint, json=req_payload, timeout=90)
+    except Exception as e:
+        raise RuntimeError(f"Gemini flowchart request failed: {e}") from e
+
+    if res.status_code >= 300:
+        detail = ""
+        try:
+            body = res.json()
+            detail = json.dumps(body)
+        except Exception:
+            detail = res.text
+        raise RuntimeError(
+            f"Gemini flowchart request failed with status {res.status_code}: {detail[:500]}"
+        )
+
+    try:
+        body = res.json()
+    except Exception as e:
+        raise RuntimeError("Gemini returned a non-JSON response for flowchart generation.") from e
+
+    image_url = _extract_image_from_gemini_response(body)
+    if image_url:
+        return image_url
+
+    raise RuntimeError("Gemini did not return an image for flowchart generation.")
 
 
 def generate_remaining_path_image(
@@ -155,7 +251,9 @@ def generate_remaining_path_image(
     Returns (image_url, message).
     image_url is None when no remaining courses exist.
     """
-    markup = build_mermaid_markup(completed_courses)
-    if not markup:
+    nodes, edges = build_remaining_graph_spec(completed_courses)
+    if not nodes:
         return None, "The student has completed all courses in the prerequisite database."
-    return mermaid_image_url(markup), "Flowchart generated successfully."
+
+    prompt = build_flowchart_image_prompt(nodes, edges)
+    return generate_flowchart_image_with_gemini(prompt), "Flowchart generated successfully."

@@ -125,6 +125,42 @@ def test_clear_transcript(client):
         sm_instance.clear_transcript.assert_called_once_with("test-session-123")
 
 
+def test_flowchart_generation_success(client):
+    with patch("backend.src.api.transcript.parse_transcript", return_value=SAMPLE_TRANSCRIPT), \
+         patch("backend.src.api.transcript.extract_completed_courses_from_transcript", return_value=["CMPSC 16"]), \
+         patch(
+             "backend.src.api.transcript.generate_remaining_path_image",
+             return_value=("data:image/png;base64,abc123", "Flowchart generated successfully."),
+         ):
+        fake_pdf = io.BytesIO(b"%PDF-1.4 fake pdf content")
+        response = client.post(
+            "/transcript/flowchart",
+            files={"file": ("transcript.pdf", fake_pdf, "application/pdf")},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["message"] == "Flowchart generated successfully."
+        assert body["image_url"] == "data:image/png;base64,abc123"
+        assert body["completed_courses"] == ["CMPSC 16"]
+
+
+def test_flowchart_generation_error(client):
+    with patch("backend.src.api.transcript.parse_transcript", return_value=SAMPLE_TRANSCRIPT), \
+         patch(
+             "backend.src.api.transcript.generate_remaining_path_image",
+             side_effect=RuntimeError("gemini failed"),
+         ):
+        fake_pdf = io.BytesIO(b"%PDF-1.4 fake pdf content")
+        response = client.post(
+            "/transcript/flowchart",
+            files={"file": ("transcript.pdf", fake_pdf, "application/pdf")},
+        )
+
+        assert response.status_code == 422
+        assert "Failed to generate flowchart" in response.json()["detail"]
+
+
 def test_session_manager_transcript_lifecycle():
     from backend.src.managers.session_manager import SessionManager
 
