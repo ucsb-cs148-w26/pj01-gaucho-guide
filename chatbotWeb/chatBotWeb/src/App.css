@@ -959,8 +959,6 @@ input:checked + .slider .icon-moon { opacity: 1; }
   color: var(--ucsb-navy);
 }
 
-}
-
 .gold-lens-button {
   width: 40px;
   height: 40px;
@@ -971,7 +969,22 @@ input:checked + .slider .icon-moon { opacity: 1; }
   border: 1px solid rgba(254, 188, 17, 0.55);
   background: rgba(254, 188, 17, 0.16);
   color: var(--ucsb-gold);
-  cursor: default;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.gold-lens-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.gold-lens-button:hover,
+.gold-lens-wrapper:focus-within .gold-lens-button {
+  transform: translateY(-1px);
+  background: rgba(254, 188, 17, 0.26);
+  border-color: rgba(254, 188, 17, 0.72);
 }
 
 .gold-lens-icon {
@@ -980,9 +993,60 @@ input:checked + .slider .icon-moon { opacity: 1; }
   height: 18px;
 }
 
+.gold-lens-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(340px, 75vw);
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 54, 96, 0.2);
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 30;
+}
+
+.gold-lens-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-top: 1px solid rgba(0, 54, 96, 0.2);
+  border-left: 1px solid rgba(0, 54, 96, 0.2);
+  transform: rotate(45deg);
+}
+
+.gold-lens-wrapper:hover .gold-lens-tooltip,
+.gold-lens-wrapper:focus-within .gold-lens-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 [data-theme="dark"] .gold-lens-button {
   background: rgba(254, 188, 17, 0.24);
   border-color: rgba(254, 188, 17, 0.7);
+}
+
+[data-theme="dark"] .gold-lens-tooltip {
+  border-color: rgba(254, 188, 17, 0.35);
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .gold-lens-tooltip::before {
+  background: #0f172a;
+  border-top-color: rgba(254, 188, 17, 0.35);
+  border-left-color: rgba(254, 188, 17, 0.35);
 }
 
 .user-avatar {
@@ -990,6 +1054,8 @@ input:checked + .slider .icon-moon { opacity: 1; }
   height: 32px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
 [data-theme="dark"] .signin-title {
   color: var(--ucsb-gold);
 }
