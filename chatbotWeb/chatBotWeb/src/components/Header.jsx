@@ -104,10 +104,12 @@ function Header({
           className="gold-lens-button"
           aria-label="Gold Lens (coming soon)"
           title="Gold Lens (coming soon)"
+          aria-disabled="true"
         >
           <span className="gold-lens-icon">
             <GoldLensIcon />
           </span>
+          <span className="gold-lens-text">Gold Lens</span>
         </button>
 
         {user && (
