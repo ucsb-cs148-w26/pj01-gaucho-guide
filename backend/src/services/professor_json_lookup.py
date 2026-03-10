@@ -16,6 +16,7 @@ STOP_WORDS = {
     "her",
     "him",
     "i",
+    "in",
     "is",
     "me",
     "of",
@@ -30,6 +31,31 @@ STOP_WORDS = {
     "to",
     "what",
     "who",
+    "cmpsc",
+    "cs",
+    "econ",
+    "math",
+    "pstat",
+    "phys",
+    "engr",
+}
+TOKEN_ALIASES = {
+    "phill": "phil",
+    "philip": "phil",
+    "phillip": "phil",
+    "phillippe": "phil",
+    "katie": "kate",
+}
+DEPARTMENT_HINTS = {
+    "cmpsc": "computer science",
+    "cs": "computer science",
+    "comp sci": "computer science",
+    "computer science": "computer science",
+    "c e": "computer engineering",
+    "ce": "computer engineering",
+    "econ": "economics",
+    "math": "mathematics",
+    "pstat": "statistics",
 }
 
 
@@ -40,9 +66,14 @@ def _normalize_text(value: str) -> str:
     return lowered.strip()
 
 
+def _canonicalize_token(token: str) -> str:
+    return TOKEN_ALIASES.get(token, token)
+
+
 def _query_terms(query: str) -> list[str]:
     terms = []
     for token in _normalize_text(query).split():
+        token = _canonicalize_token(token)
         if token in STOP_WORDS:
             continue
         if token.isdigit():
@@ -51,6 +82,14 @@ def _query_terms(query: str) -> list[str]:
             continue
         terms.append(token)
     return terms
+
+
+def _department_hint(query: str) -> str | None:
+    q = _normalize_text(query)
+    for key, value in DEPARTMENT_HINTS.items():
+        if key in q:
+            return value
+    return None
 
 
 @lru_cache(maxsize=4)
@@ -92,7 +131,7 @@ def _score_match(name: str, query: str) -> int:
         return 0
 
     score = 0
-    name_terms = set(name_norm.split())
+    name_terms = {_canonicalize_token(tok) for tok in name_norm.split()}
     query_terms = set(_query_terms(query_norm))
     overlap = len(name_terms & query_terms)
 
@@ -108,7 +147,12 @@ def _score_match(name: str, query: str) -> int:
     ratio = SequenceMatcher(None, query_norm, name_norm).ratio()
     score += int(ratio * 80)
 
-    if score < 180:
+    # Avoid loose first-name-only collisions for two-token queries
+    # like "Phill Conrad" matching "Phillip Christopher".
+    if len(query_terms) >= 2 and overlap < 2 and ratio < 0.62:
+        return 0
+
+    if score < 120:
         return 0
     return score
 
@@ -124,6 +168,16 @@ def search_local_professors(query: str, limit: int = 4, path: str | None = None)
         if score <= 0:
             continue
         ranked.append((score, row))
+
+    dept_hint = _department_hint(query)
+    if dept_hint:
+        dept_ranked = []
+        for score, row in ranked:
+            department = _normalize_text(str(row.get("department", "")))
+            if dept_hint in department:
+                dept_ranked.append((score + 80, row))
+        if dept_ranked:
+            ranked = dept_ranked
 
     ranked.sort(key=lambda item: item[0], reverse=True)
     return [row for _, row in ranked[:limit]]

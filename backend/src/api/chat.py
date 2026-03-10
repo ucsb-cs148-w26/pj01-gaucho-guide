@@ -221,6 +221,16 @@ def _is_professor_query(user_text: str) -> bool:
     return any(token in q for token in keywords) or any(token in q for token in pronoun_refs)
 
 
+def _format_professor_docs_for_context(docs: list) -> str:
+    if not docs:
+        return ""
+    chunks = []
+    for doc in docs[:2]:
+        if getattr(doc, "page_content", None):
+            chunks.append(doc.page_content)
+    return "\n\n".join(chunks)
+
+
 def _build_transcript_constraint_block(transcript_context: dict) -> str:
     completed = transcript_context.get("completed_courses", [])
     in_progress = transcript_context.get("in_progress_courses", [])
@@ -334,6 +344,7 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         is_professor_query = _is_professor_query(retrieval_query)
         professor_matches = []
+        professor_fallback_docs = []
         docs = []
         vector_manager = None
 
@@ -347,20 +358,32 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
                 professor_matches = search_local_professors(retrieval_query, limit=1)
 
         if is_professor_query and not professor_matches:
-            no_match_response = (
-                "I couldn't find that UCSB professor yet. "
-                "Send the exact first and last name (or department), and I'll check again."
-            )
+            try:
+                if vector_manager is None:
+                    vector_manager = VectorManager(PINECONE_API_KEY)
+                professor_fallback_docs = vector_manager.vector_store.similarity_search(
+                    retrieval_query,
+                    k=2,
+                    namespace="professor_data",
+                )
+            except Exception:
+                professor_fallback_docs = []
 
-            user_text_saved = to_text(user_text)
-            ai_text_saved = to_text(no_match_response)
-            session_manager.save_message(chat_session_id, "human", user_text_saved)
-            session_manager.save_message(chat_session_id, "ai", ai_text_saved)
-            if user_email:
-                firebase_history.save_message(user_email, chat_session_id, "human", user_text_saved)
-                firebase_history.save_message(user_email, chat_session_id, "ai", ai_text_saved)
+            if not professor_fallback_docs:
+                no_match_response = (
+                    "I couldn't find that UCSB professor yet. "
+                    "Send the exact first and last name (or department), and I'll check again."
+                )
 
-            return ChatResponseDTO(response=no_match_response, model_name=model_name)
+                user_text_saved = to_text(user_text)
+                ai_text_saved = to_text(no_match_response)
+                session_manager.save_message(chat_session_id, "human", user_text_saved)
+                session_manager.save_message(chat_session_id, "ai", ai_text_saved)
+                if user_email:
+                    firebase_history.save_message(user_email, chat_session_id, "human", user_text_saved)
+                    firebase_history.save_message(user_email, chat_session_id, "ai", ai_text_saved)
+
+                return ChatResponseDTO(response=no_match_response, model_name=model_name)
 
         if not is_professor_query:
             vector_manager = VectorManager(PINECONE_API_KEY)
@@ -388,10 +411,16 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         context_sections = []
         if is_professor_query:
-            context_sections.append(
-                "PROFESSOR PROFILE:\n"
-                + format_professor_matches_for_context(professor_matches)
-            )
+            if professor_matches:
+                context_sections.append(
+                    "PROFESSOR PROFILE:\n"
+                    + format_professor_matches_for_context(professor_matches)
+                )
+            elif professor_fallback_docs:
+                context_sections.append(
+                    "PROFESSOR FEEDBACK NOTES:\n"
+                    + _format_professor_docs_for_context(professor_fallback_docs)
+                )
         if docs:
             context_sections.append(
                 "UCSB REFERENCE NOTES:\n" + "\n\n".join([d.page_content for d in docs]))
@@ -417,7 +446,7 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
            - Never recommend completed or in-progress/planned courses as new next courses.
            - For "what should I take next" questions, prioritize the deterministic eligible-next list.
         3. Use the provided context first. For professor-specific questions, prioritize the local professor JSON context before any other source.
-           - If no professor match is found in the local professor JSON context, ask the user for the exact professor name/spelling.
+           - If no professor match is found in the local professor JSON context, use professor feedback notes.
         4. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
         5. If details are missing or uncertain, use reverse search to verify facts.
         6. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
@@ -434,6 +463,7 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
             - Do not mention RAG, context blocks, retrieval, vector databases, JSON files, prompts, or backend logic.
             - Do not say things like "not in the context" or "I can't find this in RAG context."
             - If uncertain, ask a concise clarifying question without mentioning internal limitations.
+        12. For professor questions, focus on one best-match professor unless the user explicitly asks for alternatives.
         """.strip())
 
         rag_prompt = f"""
