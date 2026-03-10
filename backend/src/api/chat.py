@@ -25,6 +25,8 @@ from src.services.transcript_advisor import build_transcript_advising_context
 
 from src.services.prereq_graph import normalize_course_code, _clean_prereq_label
 
+from src.services.prereq_graph import DATA_PATH
+
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
 load_dotenv(dotenv_path=".env", override=True)
