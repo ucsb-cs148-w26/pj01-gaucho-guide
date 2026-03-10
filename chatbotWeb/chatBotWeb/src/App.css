@@ -82,11 +82,9 @@ body {
 
 .header h1 {
   margin: 0;
-  font-size: 1.55rem;
-  line-height: 1;
-  letter-spacing: 0.01em;
-  font-weight: 800;
-  color: var(--text-on-dark);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--ucsb-gold);
 }
 
 .header-nav {
@@ -506,21 +504,29 @@ body {
 }
 
 .prompt {
-  margin: 0 0 10px;
+  margin-bottom: 40px;
   text-align: center;
-  font-size: clamp(1.85rem, 3.8vw, 2.7rem);
-  font-weight: 800;
-  line-height: 1.18;
+  font-size: 38px;
+  font-weight: 700;
   color: transparent;
-  background: linear-gradient(95deg, var(--ucsb-navy), var(--ucsb-blue), var(--ucsb-gold), var(--ucsb-navy));
-  background-size: 240% auto;
+  background: linear-gradient(to right, var(--ucsb-navy), var(--ucsb-blue), var(--ucsb-gold), var(--ucsb-navy));
+  background-size: 300% auto;
   -webkit-background-clip: text;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
   animation: shine 5s linear infinite;
 }
 
 .gold-text {
   color: inherit;
+}
+
+[data-theme="dark"] .prompt {
+  background: linear-gradient(to right, #64b5f6, #febc11, #64b5f6);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @keyframes shine {
