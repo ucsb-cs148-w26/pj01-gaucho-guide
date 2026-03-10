@@ -11,7 +11,12 @@ except Exception:  # pragma: no cover - optional dependency guard
 
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cmpsc_prereqs.json"
-DEFAULT_FLOWCHART_IMAGE_MODEL = "gemini-2.5-flash-image-preview"
+DEFAULT_FLOWCHART_IMAGE_MODEL = "gemini-2.5-flash-image"
+FLOWCHART_MODEL_ALIASES = {
+    "gemini-2.5-flash-image-preview": "gemini-2.5-flash-image",
+    "nano-banana": "gemini-2.5-flash-image",
+    "nano banana": "gemini-2.5-flash-image",
+}
 
 INCOMPLETE_OR_FAILING_GRADES = {
     "",
@@ -203,7 +208,10 @@ def generate_flowchart_image_with_gemini(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("Missing GOOGLE_API_KEY or GEMINI_API_KEY for Gemini image generation.")
 
-    model = os.getenv("FLOWCHART_GEMINI_IMAGE_MODEL", DEFAULT_FLOWCHART_IMAGE_MODEL)
+    model = os.getenv("FLOWCHART_GEMINI_IMAGE_MODEL", DEFAULT_FLOWCHART_IMAGE_MODEL).strip()
+    if model.startswith("models/"):
+        model = model.split("models/", 1)[1]
+    model = FLOWCHART_MODEL_ALIASES.get(model.lower(), model)
     endpoint = (
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         f"?key={api_key}"
