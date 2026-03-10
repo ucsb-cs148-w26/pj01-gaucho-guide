@@ -199,3 +199,17 @@ The app combines scraped data with AI-generated responses to give quick, easy-to
 This project is licensed under the MIT License.
 See the LICENSE file in the repository for details.
 
+
+## Deployment
+
+A live testable version of Gaucho Guider is available here:
+
+https://gauchoguider.vercel.app
+
+This deployment is hosted on Vercel and allows users to test the current web interface of the project, including the chatbot interface and flowchart planner.
+
+To test the application:
+
+1. Visit the link above.
+2. Open the chat interface and ask questions related to UCSB courses.
+3. Navigate to the Flowchart Planner tab to upload a transcript PDF and generate a prerequisite graph.

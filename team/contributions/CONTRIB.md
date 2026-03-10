@@ -55,7 +55,26 @@ I primarily worked on the frontend design:
 **Notes on GitHub Contributors Graph**
 The contributor graph shows what I contributed and can be see within the frontend layout. Although, the amount of commit counts does not accurately show everyone’s contributions. For me, I primarily worked  by giving my implementation and creative ideas with the frontend and OAuth outside of commits.
 
-Anjali
+## Anjali
+
+Code Contributions:
+I primarily worked on implementing OAuth for the sign-in system and developing the initial UI for the sign-in page. Key contributions include:
+
+Integrated OAuth workflow to enable secure user authentication.
+
+Developed the initial frontend layout and styling for the login/sign-in page.
+
+Ensured a responsive, user-friendly design that set the stage for subsequent frontend development.
+
+Non-Coding Contributions:
+Beyond coding, I focused on supporting team coordination and workflow:
+
+Facilitated communication and collaboration among team members during planning, scrums, and retrospectives.
+
+Helped organize tasks, track progress, and ensure deadlines were met.
+
+Notes on GitHub Contributors Graph:
+The contributor graph is a reasonably accurate reflection of my work. However, it doesn’t fully capture the impact of my non-coding contributions. Also it should be noted that I have two GitHub accounts, so some commits may appear under a separate account.
 
 ## Ria
 

@@ -69,49 +69,62 @@ function FlowchartPage({ apiUrl, getIdToken }) {
 
   return (
     <div className="flowchart-page">
-      <h2 className="flowchart-title">Flow Chart Generator</h2>
-      <p className="flowchart-subtitle">
-        Upload your transcript PDF to directly generate your remaining CS prerequisite graph.
-      </p>
+      <div className="flowchart-shell">
+        <h2 className="flowchart-title">Flowchart Planner</h2>
+        <p className="flowchart-subtitle">
+          Upload your transcript PDF to generate your remaining CS prerequisite graph.
+        </p>
 
-      <div className="flowchart-actions">
-        <button type="button" className="flowchart-btn flowchart-choose" onClick={handleChoosePdf}>
-          Choose Transcript PDF
-        </button>
-        <button
-          type="button"
-          className="flowchart-btn flowchart-generate"
-          onClick={handleGenerate}
-          disabled={!file || isGenerating}
-        >
-          {isGenerating ? "Generating..." : "Generate Graph"}
-        </button>
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="application/pdf"
-        onChange={handleFileChange}
-        hidden
-      />
-
-      {file && <p className="flowchart-file">Selected: {file.name}</p>}
-      {statusMessage && <p className="flowchart-status">{statusMessage}</p>}
-      {error && <p className="error">{error}</p>}
-
-      {imageUrl && (
-        <div className="flowchart-result">
-          <img
-            src={imageUrl}
-            alt="Generated prerequisite flow chart"
-            className="flowchart-image"
-          />
-          <a href={imageUrl} target="_blank" rel="noreferrer" className="flowchart-link">
-            Open image in new tab
-          </a>
+        <div className="flowchart-actions">
+          <button
+            type="button"
+            className="flowchart-btn flowchart-choose"
+            onClick={handleChoosePdf}
+          >
+            Choose Transcript PDF
+          </button>
+          <button
+            type="button"
+            className="flowchart-btn flowchart-generate"
+            onClick={handleGenerate}
+            disabled={!file || isGenerating}
+          >
+            {isGenerating ? "Generating..." : "Generate Graph"}
+          </button>
         </div>
-      )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          onChange={handleFileChange}
+          hidden
+        />
+
+        <div className="flowchart-feedback">
+          {file && <p className="flowchart-file">Selected: {file.name}</p>}
+          {statusMessage && <p className="flowchart-status">{statusMessage}</p>}
+          {error && <p className="error">{error}</p>}
+        </div>
+
+        {imageUrl && (
+          <div className="flowchart-result">
+            <img
+              src={imageUrl}
+              alt="Generated prerequisite flow chart"
+              className="flowchart-image"
+            />
+            <a
+              href={imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flowchart-link"
+            >
+              Open image in new tab
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

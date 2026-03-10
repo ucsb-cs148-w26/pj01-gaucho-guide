@@ -99,20 +99,18 @@ function Header({
           <span className="profile-text">Profile</span>
         </button>
 
-        <div className="gold-lens-wrapper">
-          <a
-            href="https://my.sa.ucsb.edu/gold/Home.aspx"
-            className="gold-lens-button"
-            aria-label="Open UCSB GOLD"
-          >
-            <span className="gold-lens-icon">
-              <GoldLensIcon />
-            </span>
-          </a>
-          <span className="gold-lens-tooltip" role="tooltip">
-            be sure to download gold lens from the chrome extension store to integrate GauchoGuider into your class registration!
+        <button
+          type="button"
+          className="gold-lens-button"
+          aria-label="Gold Lens (coming soon)"
+          title="Gold Lens (coming soon)"
+          aria-disabled="true"
+        >
+          <span className="gold-lens-icon">
+            <GoldLensIcon />
           </span>
-        </div>
+          <span className="gold-lens-text">Gold Lens</span>
+        </button>
 
         {user && (
           <button onClick={signOut} className="logout-btn" type="button">

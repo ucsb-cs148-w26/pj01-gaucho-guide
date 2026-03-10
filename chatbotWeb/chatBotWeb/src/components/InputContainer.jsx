@@ -83,8 +83,8 @@ function InputContainer({
       {showModal && (
         <div className="modal-overlay" onClick={handleCancel}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{marginTop: 0}}>Upload Transcript</h3>
-            <p style={{color: '#888', fontSize: '0.95rem'}}>
+            <h3 className="modal-title">Upload Transcript</h3>
+            <p className="modal-description">
               To provide the best advice, we need your unofficial transcript.
               <br /><br />
               <strong>Please upload a PDF file only.</strong>
