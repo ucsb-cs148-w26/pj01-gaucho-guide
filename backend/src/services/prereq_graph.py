@@ -75,6 +75,51 @@ def extract_completed_courses_from_transcript(transcript_data: dict) -> list[str
     return sorted(completed)
 
 
+def extract_taken_or_in_progress_courses_from_transcript(transcript_data: dict) -> list[str]:
+    """
+    Returns courses that should be treated as already accounted for in planning:
+    completed + in_progress + planned.
+    """
+    accounted: set[str] = set()
+
+    for row in transcript_data.get("courses", []):
+        if not isinstance(row, dict):
+            continue
+
+        raw_code = row.get("course_code")
+        if not isinstance(raw_code, str) or not raw_code.strip():
+            continue
+
+        status = row.get("status")
+        status_norm = status.strip().lower() if isinstance(status, str) else ""
+
+        if status_norm in {"completed", "in_progress", "planned"}:
+            accounted.add(normalize_course_code(raw_code))
+            continue
+
+        comp_units = row.get("comp_units")
+        try:
+            comp_units_f = float(comp_units) if comp_units is not None else None
+        except Exception:
+            comp_units_f = None
+
+        if comp_units_f is not None:
+            if comp_units_f > 0:
+                accounted.add(normalize_course_code(raw_code))
+                continue
+            if comp_units_f == 0:
+                att_units = row.get("att_units", row.get("units"))
+                try:
+                    att_units_f = float(att_units) if att_units is not None else None
+                except Exception:
+                    att_units_f = None
+                if att_units_f is not None and att_units_f > 0:
+                    accounted.add(normalize_course_code(raw_code))
+                    continue
+
+    return sorted(accounted)
+
+
 def _node_id(label: str) -> str:
     safe = re.sub(r"[^A-Za-z0-9_]+", "_", label.strip())
     safe = safe.strip("_")
@@ -89,6 +134,87 @@ def _clean_prereq_label(prereq: str) -> str:
     cleaned = prereq.strip()
     cleaned = re.sub(r"^(OR|AND)\s+", "", cleaned, flags=re.IGNORECASE)
     return cleaned.strip()
+
+
+def _resolve_prereq_label(prereq: str, known_courses: set[str]) -> tuple[str | None, bool]:
+    if not isinstance(prereq, str):
+        return None, False
+
+    cleaned = _clean_prereq_label(prereq)
+    if not cleaned:
+        return None, False
+
+    normalized = normalize_course_code(cleaned)
+    if normalized in known_courses:
+        return normalized, True
+
+    compact = cleaned.upper()
+    compact = re.sub(r"^(CMPSC|CS)\s*", "", compact).strip()
+    if re.fullmatch(r"\d+[A-Z]?", compact):
+        alias = f"CMPSC {compact}"
+        if alias in known_courses:
+            return alias, True
+
+    return normalized, False
+
+
+def _course_sort_key(course: str) -> tuple[int, int, str]:
+    normalized = normalize_course_code(course)
+    m = re.match(r"^CMPSC\s+(\d+)([A-Z]?)$", normalized)
+    if not m:
+        return (9999, 9999, normalized)
+    number = int(m.group(1))
+    suffix = m.group(2) or ""
+    suffix_rank = ord(suffix) if suffix else 0
+    return (number, suffix_rank, normalized)
+
+
+def _compute_subset_levels(
+    subset_courses: list[str], edges: set[tuple[str, str]]
+) -> dict[str, int]:
+    indegree = {course: 0 for course in subset_courses}
+    outgoing: dict[str, set[str]] = {course: set() for course in subset_courses}
+
+    for source, target in edges:
+        if source not in indegree or target not in indegree:
+            continue
+        if target in outgoing[source]:
+            continue
+        outgoing[source].add(target)
+        indegree[target] += 1
+
+    queue = sorted([course for course, degree in indegree.items() if degree == 0], key=_course_sort_key)
+    levels = {course: 0 for course in subset_courses}
+
+    while queue:
+        node = queue.pop(0)
+        for neighbor in sorted(outgoing[node], key=_course_sort_key):
+            levels[neighbor] = max(levels[neighbor], levels[node] + 1)
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    return levels
+
+
+def _is_cmpsc_0_to_199(course_code: str) -> bool:
+    normalized = normalize_course_code(course_code)
+    m = re.fullmatch(r"CMPSC (\d{1,3})([A-Z]?)", normalized)
+    if not m:
+        return False
+    number = int(m.group(1))
+    return 0 <= number <= 199
+
+
+def _prereq_sort_key(course: str) -> tuple[int, int, int, str]:
+    normalized = normalize_course_code(course)
+    m = re.match(r"^CMPSC\s+(\d+)([A-Z]?)$", normalized)
+    if m:
+        number = int(m.group(1))
+        suffix = m.group(2) or ""
+        suffix_rank = ord(suffix) if suffix else 0
+        return (0, number, suffix_rank, normalized)
+    return (1, 9999, 9999, normalized)
 
 
 def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
@@ -159,3 +285,152 @@ def generate_remaining_path_image(
     if not markup:
         return None, "The student has completed all courses in the prerequisite database."
     return mermaid_image_url(markup), "Flowchart generated successfully."
+
+
+def build_upper_division_flowchart_data(
+    completed_courses: Iterable[str] | None = None,
+    accounted_courses: Iterable[str] | None = None,
+) -> dict:
+    """
+    Returns frontend-friendly flowchart data for CMPSC courses in the 0-199 range.
+    """
+    with open(DATA_PATH, "r", encoding="utf-8") as f:
+        raw_data = json.load(f)
+
+    data: dict[str, dict] = {}
+    for course, details in raw_data.items():
+        if not isinstance(course, str) or not isinstance(details, dict):
+            continue
+        data[normalize_course_code(course)] = details
+
+    completed = {
+        normalize_course_code(code)
+        for code in (completed_courses or [])
+        if isinstance(code, str) and code.strip()
+    }
+    known_courses = set(data.keys())
+
+    target_courses = sorted(
+        [course for course in known_courses if _is_cmpsc_0_to_199(course)],
+        key=_course_sort_key,
+    )
+
+    accounted_set = {
+        normalize_course_code(code)
+        for code in (accounted_courses or completed)
+        if isinstance(code, str) and code.strip()
+    }
+
+    target_taken = [course for course in target_courses if course in accounted_set]
+    target_remaining = [course for course in target_courses if course not in accounted_set]
+    target_taken_set = set(target_taken)
+    target_remaining_set = set(target_remaining)
+
+    if not target_courses:
+        return {
+            "nodes": [],
+            "edges": [],
+            "tiers": [],
+            "taken_courses": [],
+            "summary": {
+                "remaining_cmpsc_0_199_courses": 0,
+                "remaining_upper_division_courses": 0,
+                "taken_cmpsc_0_199_courses": 0,
+                "eligible_now": 0,
+            },
+        }
+
+    edges: set[tuple[str, str]] = set()
+    node_meta: dict[str, dict] = {}
+
+    for course in target_remaining:
+        prereq_rows = data.get(course, {}).get("prereq_courses", [])
+        remaining_prereqs: set[str] = set()
+
+        for prereq in prereq_rows:
+            resolved, is_internal = _resolve_prereq_label(prereq, known_courses)
+            if not resolved:
+                continue
+
+            resolved_norm = normalize_course_code(resolved)
+            if is_internal and resolved_norm in target_taken_set:
+                edges.add((resolved_norm, course))
+                continue
+
+            if resolved_norm in completed:
+                continue
+
+            remaining_prereqs.add(resolved_norm)
+
+            if is_internal and resolved_norm in target_remaining_set:
+                edges.add((resolved_norm, course))
+
+        unmet_count = len(remaining_prereqs)
+        node_meta[course] = {
+            "remaining_prereqs": sorted(remaining_prereqs, key=_prereq_sort_key),
+            "unmet_prereq_count": unmet_count,
+            "eligible_now": unmet_count == 0,
+        }
+
+    levels = _compute_subset_levels(target_remaining, edges) if target_remaining else {}
+    max_level = max((levels.get(course, 0) for course in target_remaining), default=-1)
+
+    tiers: list[list[str]] = []
+    for level in range(max_level + 1 if max_level >= 0 else 0):
+        tier_nodes = sorted(
+            [course for course in target_remaining if levels.get(course, 0) == level],
+            key=_course_sort_key,
+        )
+        if tier_nodes:
+            tiers.append(tier_nodes)
+
+    nodes = []
+    for course in target_taken:
+        nodes.append(
+            {
+                "id": course,
+                "label": course,
+                "tier": -1,
+                "taken": True,
+                "eligible_now": False,
+                "unmet_prereq_count": 0,
+                "remaining_prereqs": [],
+            }
+        )
+
+    for course in sorted(target_remaining, key=lambda c: (levels.get(c, 0), _course_sort_key(c))):
+        meta = node_meta.get(course, {})
+        nodes.append(
+            {
+                "id": course,
+                "label": course,
+                "tier": levels.get(course, 0),
+                "taken": False,
+                "eligible_now": bool(meta.get("eligible_now")),
+                "unmet_prereq_count": int(meta.get("unmet_prereq_count", 0)),
+                "remaining_prereqs": meta.get("remaining_prereqs", []),
+            }
+        )
+
+    edge_list = [
+        {"from": source, "to": target}
+        for source, target in sorted(
+            edges,
+            key=lambda edge: (_course_sort_key(edge[0]), _course_sort_key(edge[1])),
+        )
+    ]
+
+    eligible_now_count = sum(1 for node in nodes if node["eligible_now"])
+
+    return {
+        "nodes": nodes,
+        "edges": edge_list,
+        "tiers": tiers,
+        "taken_courses": target_taken,
+        "summary": {
+            "remaining_cmpsc_0_199_courses": len(target_remaining),
+            "remaining_upper_division_courses": len(target_remaining),
+            "taken_cmpsc_0_199_courses": len(target_taken),
+            "eligible_now": eligible_now_count,
+        },
+    }
