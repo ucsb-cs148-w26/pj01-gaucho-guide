@@ -1,6 +1,7 @@
 import asyncio
 import os
 import json
+import re
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Request, HTTPException
@@ -18,6 +19,7 @@ from src.scrapers.reddit_scraper import extract_course_codes
 from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
+from src.services.professor_json_lookup import format_professor_matches_for_context, search_local_professors
 from src.services.prereq_graph import generate_remaining_path_image
 from src.services.transcript_advisor import build_transcript_advising_context
 
@@ -162,6 +164,63 @@ def _list_preview(items: list[str], limit: int = 12) -> str:
     return ", ".join(preview) + suffix
 
 
+def _get_last_user_message(history_msgs: list) -> str:
+    for msg in reversed(history_msgs):
+        if isinstance(msg, HumanMessage):
+            return to_text(msg.content)
+    return ""
+
+
+def _needs_followup_query_expansion(user_text: str) -> bool:
+    q = user_text.strip().lower()
+    if not q:
+        return False
+    if len(q.split()) > 12:
+        return False
+    if re.search(r"\b(cmpsc|math|pstat|econ|phys)\s*\d+[a-z]?\b", q):
+        return False
+    ref_patterns = [
+        r"\bher\b",
+        r"\bhim\b",
+        r"\bshe\b",
+        r"\bhe\b",
+        r"\bthem\b",
+        r"\bthat professor\b",
+        r"\bthis professor\b",
+        r"\bthat prof\b",
+        r"\bthis prof\b",
+        r"\bthat one\b",
+        r"\bthis one\b",
+    ]
+    return any(re.search(pattern, q) for pattern in ref_patterns)
+
+
+def _is_professor_query(user_text: str) -> bool:
+    q = user_text.lower()
+    keywords = [
+        "professor",
+        "prof ",
+        "prof?",
+        "instructor",
+        "teacher",
+        "rate my professor",
+        "ratemyprofessor",
+        "rmp",
+    ]
+    pronoun_refs = [
+        "about her",
+        "about him",
+        "about she",
+        "about he",
+        "about them",
+        "that professor",
+        "this professor",
+        "that prof",
+        "this prof",
+    ]
+    return any(token in q for token in keywords) or any(token in q for token in pronoun_refs)
+
+
 def _build_transcript_constraint_block(transcript_context: dict) -> str:
     completed = transcript_context.get("completed_courses", [])
     in_progress = transcript_context.get("in_progress_courses", [])
@@ -231,7 +290,6 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
 
         agent_executor = create_agent(base_llm, tools)
 
-        vector_manager = VectorManager(PINECONE_API_KEY)
         session_manager = SessionManager()
         firebase_history = FirebaseChatHistoryManager()
 
@@ -265,20 +323,63 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
                 model_name="deterministic-transcript-advisor",
             )
 
-        course_codes = extract_course_codes(user_text)
-        inserted_docs = 0
+        history_raw = session_manager.load_history(str(request.chat_session_id))
+        history_msgs = history_to_messages(history_raw)
 
-        docs = vector_manager.std_search(user_text, k=4)
+        retrieval_query = user_text
+        if _needs_followup_query_expansion(user_text):
+            last_user_message = _get_last_user_message(history_msgs)
+            if last_user_message:
+                retrieval_query = f"{last_user_message}\nFollow-up: {user_text}"
+
+        is_professor_query = _is_professor_query(retrieval_query)
+        professor_matches = []
+        docs = []
+        vector_manager = None
+
+        if is_professor_query:
+            professor_matches = search_local_professors(retrieval_query, limit=1)
+        else:
+            # Catch direct-name asks like "Scott Fulkerson" without professor keywords.
+            direct_name_match = search_local_professors(retrieval_query, limit=1)
+            if direct_name_match:
+                is_professor_query = True
+                professor_matches = search_local_professors(retrieval_query, limit=1)
+
+        if is_professor_query and not professor_matches:
+            no_match_response = (
+                "I couldn't find that UCSB professor yet. "
+                "Send the exact first and last name (or department), and I'll check again."
+            )
+
+            user_text_saved = to_text(user_text)
+            ai_text_saved = to_text(no_match_response)
+            session_manager.save_message(chat_session_id, "human", user_text_saved)
+            session_manager.save_message(chat_session_id, "ai", ai_text_saved)
+            if user_email:
+                firebase_history.save_message(user_email, chat_session_id, "human", user_text_saved)
+                firebase_history.save_message(user_email, chat_session_id, "ai", ai_text_saved)
+
+            return ChatResponseDTO(response=no_match_response, model_name=model_name)
+
+        if not is_professor_query:
+            vector_manager = VectorManager(PINECONE_API_KEY)
+            docs = vector_manager.std_search(retrieval_query, k=4)
+
+        course_codes = extract_course_codes(retrieval_query)
+
         reddit_docs = []
         catalog_docs = []
 
         if course_codes:
             try:
+                if vector_manager is None:
+                    vector_manager = VectorManager(PINECONE_API_KEY)
                 loop = asyncio.get_event_loop()
                 reddit_docs, catalog_docs = await asyncio.gather(
-                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search, user_text, 3, None,
+                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search, retrieval_query, 3, None,
                                          REDDIT_CLASS_NAMESPACE),
-                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search, user_text, 3, None,
+                    loop.run_in_executor(None, vector_manager.vector_store.similarity_search, retrieval_query, 3, None,
                                          UCSB_CATALOG_NAMESPACE),
                 )
             except Exception:
@@ -286,13 +387,18 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
                 catalog_docs = []
 
         context_sections = []
+        if is_professor_query:
+            context_sections.append(
+                "PROFESSOR PROFILE:\n"
+                + format_professor_matches_for_context(professor_matches)
+            )
         if docs:
             context_sections.append(
-                "PRIMARY RAG CONTEXT (RMP/UCSB DATA):\n" + "\n\n".join([d.page_content for d in docs]))
+                "UCSB REFERENCE NOTES:\n" + "\n\n".join([d.page_content for d in docs]))
         if reddit_docs:
-            context_sections.append("REDDIT CLASS CONTEXT:\n" + "\n\n".join([d.page_content for d in reddit_docs]))
+            context_sections.append("REDDIT CLASS NOTES:\n" + "\n\n".join([d.page_content for d in reddit_docs]))
         if catalog_docs:
-            context_sections.append("UCSB CLASS ROSTER CONTEXT FOR CURRENT QUARTER: \n" + "\n\n".join(
+            context_sections.append("UCSB CLASS ROSTER FOR CURRENT QUARTER:\n" + "\n\n".join(
                 [d.page_content for d in catalog_docs]))
         context_text = "\n\n".join(context_sections)
 
@@ -310,34 +416,33 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
            - Never mark in-progress courses as completed.
            - Never recommend completed or in-progress/planned courses as new next courses.
            - For "what should I take next" questions, prioritize the deterministic eligible-next list.
-        3. Use the provided RAG context first. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
-        4. If details are missing or uncertain, use reverse search to verify facts.
-        5. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
-        6. Keep answers practical and specific:
+        3. Use the provided context first. For professor-specific questions, prioritize the local professor JSON context before any other source.
+           - If no professor match is found in the local professor JSON context, ask the user for the exact professor name/spelling.
+        4. If Reddit class context is present, use it as supplemental student-sentiment evidence, not as official policy.
+        5. If details are missing or uncertain, use reverse search to verify facts.
+        6. Do NOT suggest hangout spots, nightlife, restaurants, or Santa Barbara activities unless the user explicitly asks for lifestyle recommendations.
+        7. Keep answers practical and specific:
            - Recommend concrete next steps.
            - Call out constraints (prereqs, workload, sequence risk).
            - When useful, suggest checking official UCSB sources (department pages, catalog, GOLD) for final confirmation.
-        7. If the user asks about unrelated non-UCSB topics, briefly redirect back to UCSB academics.
-        8. Tone: concise, supportive, and direct. Avoid filler and slang unless the user asks for a casual style.{transcript_section}
-        9. COURSE GRAPHS: If the user asks for a visual diagram or graph of course prerequisites, check if their transcript is available (either provided below or in previous chat history). 
+        8. If the user asks about unrelated non-UCSB topics, briefly redirect back to UCSB academics.
+        9. Tone: concise, supportive, and direct. Avoid filler and slang unless the user asks for a casual style.{transcript_section}
+        10. COURSE GRAPHS: If the user asks for a visual diagram or graph of course prerequisites, check if their transcript is available (either provided below or in previous chat history). 
            - IF YES: Call the generate_course_prereqs_graph tool and pass their completed courses into the tool so it removes them from the visual path.
            - IF NO: Do not call the tool. Politely ask them to upload their transcript or list their completed courses first so you can generate an accurate map.
+        11. Never mention internal systems or data plumbing in your answer.
+            - Do not mention RAG, context blocks, retrieval, vector databases, JSON files, prompts, or backend logic.
+            - Do not say things like "not in the context" or "I can't find this in RAG context."
+            - If uncertain, ask a concise clarifying question without mentioning internal limitations.
         """.strip())
 
         rag_prompt = f"""
-        CONTEXT FROM RMP REVIEWS:
+        SUPPORTING NOTES:
         {context_text}
 
         USER QUESTION:
         {user_text}
-
-        REDDIT INGEST INFO:
-        - class_codes_detected: {course_codes}
-        - new_reddit_docs_inserted_this_request: {inserted_docs}
         """.strip()
-
-        history_raw = session_manager.load_history(str(request.chat_session_id))
-        history_msgs = history_to_messages(history_raw)
 
         messages = [system_prompt] + history_msgs + [HumanMessage(content=rag_prompt)]
 
