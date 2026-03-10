@@ -113,11 +113,14 @@ def generate_future_route_graph(current_courses: List[str]) -> str:
 
         markup_str = "\n".join(mermaid_markup)
         encoded = base64.urlsafe_b64encode(markup_str.encode("utf-8")).decode("ascii")
-        generated_urls.append(f"https://mermaid.ink/img/{encoded}")
+        generated_urls.append(f"https://mermaid.ink/svg/{encoded}")
 
     selected_url = random.choice(generated_urls)
 
-    return f"Here is a possible future route you could take based on your current coursework:\n\n![Future Route Graph]({selected_url})"
+    return (
+        f"Here is a possible future route you could take based on your current coursework:\n\n"
+        f'<img src="{selected_url}" alt="Future Route Graph" style="max-width: 100%; height: auto;">\n\n'
+    )
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -298,9 +301,9 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
         )
 
         if (
-            transcript_context
-            and TRANSCRIPT_DETERMINISTIC_ADVICE
-            and _is_transcript_planning_query(user_text)
+                transcript_context
+                and TRANSCRIPT_DETERMINISTIC_ADVICE
+                and _is_transcript_planning_query(user_text)
         ):
             deterministic_response = _build_deterministic_transcript_advice(transcript_context)
             user_text_saved = to_text(user_text)
@@ -352,7 +355,8 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
         transcript_section = ""
         if transcript_data:
             transcript_section = f"\nSTUDENT TRANSCRIPT:\n{json.dumps(transcript_data, indent=2)}\n"
-            transcript_section += "\nTRANSCRIPT FACTS:\n" + _build_transcript_constraint_block(transcript_context) + "\n"
+            transcript_section += "\nTRANSCRIPT FACTS:\n" + _build_transcript_constraint_block(
+                transcript_context) + "\n"
 
         system_prompt = SystemMessage(content=f"""
         You are GauchoGuider, an academic-focused UCSB advising assistant.
