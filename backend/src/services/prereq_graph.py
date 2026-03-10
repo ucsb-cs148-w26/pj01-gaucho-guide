@@ -124,11 +124,11 @@ def _course_sort_key(course: str) -> tuple[int, int, str]:
     return (number, suffix_rank, normalized)
 
 
-def _compute_upper_levels(
-    upper_courses: list[str], edges: set[tuple[str, str]]
+def _compute_subset_levels(
+    subset_courses: list[str], edges: set[tuple[str, str]]
 ) -> dict[str, int]:
-    indegree = {course: 0 for course in upper_courses}
-    outgoing: dict[str, set[str]] = {course: set() for course in upper_courses}
+    indegree = {course: 0 for course in subset_courses}
+    outgoing: dict[str, set[str]] = {course: set() for course in subset_courses}
 
     for source, target in edges:
         if source not in indegree or target not in indegree:
@@ -139,7 +139,7 @@ def _compute_upper_levels(
         indegree[target] += 1
 
     queue = sorted([course for course, degree in indegree.items() if degree == 0], key=_course_sort_key)
-    levels = {course: 0 for course in upper_courses}
+    levels = {course: 0 for course in subset_courses}
 
     while queue:
         node = queue.pop(0)
@@ -152,9 +152,24 @@ def _compute_upper_levels(
     return levels
 
 
-def _is_upper_division_cmpsc(course_code: str) -> bool:
+def _is_cmpsc_0_to_199(course_code: str) -> bool:
     normalized = normalize_course_code(course_code)
-    return bool(re.fullmatch(r"CMPSC 1\d{2}[A-Z]?", normalized))
+    m = re.fullmatch(r"CMPSC (\d{1,3})([A-Z]?)", normalized)
+    if not m:
+        return False
+    number = int(m.group(1))
+    return 0 <= number <= 199
+
+
+def _prereq_sort_key(course: str) -> tuple[int, int, int, str]:
+    normalized = normalize_course_code(course)
+    m = re.match(r"^CMPSC\s+(\d+)([A-Z]?)$", normalized)
+    if m:
+        number = int(m.group(1))
+        suffix = m.group(2) or ""
+        suffix_rank = ord(suffix) if suffix else 0
+        return (0, number, suffix_rank, normalized)
+    return (1, 9999, 9999, normalized)
 
 
 def build_mermaid_markup(completed_courses: Iterable[str] | None = None) -> str:
@@ -229,7 +244,7 @@ def generate_remaining_path_image(
 
 def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None = None) -> dict:
     """
-    Returns frontend-friendly flowchart data for upper-division CMPSC courses only.
+    Returns frontend-friendly flowchart data for CMPSC courses in the 0-199 range.
     """
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         raw_data = json.load(f)
@@ -247,19 +262,20 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
     }
     known_courses = set(data.keys())
 
-    upper_courses = sorted(
-        [course for course in known_courses if _is_upper_division_cmpsc(course)],
+    target_courses = sorted(
+        [course for course in known_courses if _is_cmpsc_0_to_199(course)],
         key=_course_sort_key,
     )
-    upper_remaining = [course for course in upper_courses if course not in completed]
-    upper_remaining_set = set(upper_remaining)
+    target_remaining = [course for course in target_courses if course not in completed]
+    target_remaining_set = set(target_remaining)
 
-    if not upper_remaining:
+    if not target_remaining:
         return {
             "nodes": [],
             "edges": [],
             "tiers": [],
             "summary": {
+                "remaining_cmpsc_0_199_courses": 0,
                 "remaining_upper_division_courses": 0,
                 "eligible_now": 0,
             },
@@ -268,46 +284,45 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
     edges: set[tuple[str, str]] = set()
     node_meta: dict[str, dict] = {}
 
-    for course in upper_remaining:
+    for course in target_remaining:
         prereq_rows = data.get(course, {}).get("prereq_courses", [])
-        pending_upper: set[str] = set()
-        unmet_non_upper = 0
+        remaining_prereqs: set[str] = set()
 
         for prereq in prereq_rows:
             resolved, is_internal = _resolve_prereq_label(prereq, known_courses)
             if not resolved:
                 continue
 
-            if resolved in completed:
+            resolved_norm = normalize_course_code(resolved)
+            if resolved_norm in completed:
                 continue
 
-            if is_internal and resolved in upper_remaining_set:
-                pending_upper.add(resolved)
-                edges.add((resolved, course))
-            else:
-                unmet_non_upper += 1
+            remaining_prereqs.add(resolved_norm)
 
-        unmet_count = len(pending_upper) + unmet_non_upper
+            if is_internal and resolved_norm in target_remaining_set:
+                edges.add((resolved_norm, course))
+
+        unmet_count = len(remaining_prereqs)
         node_meta[course] = {
-            "remaining_upper_prereqs": sorted(pending_upper, key=_course_sort_key),
+            "remaining_prereqs": sorted(remaining_prereqs, key=_prereq_sort_key),
             "unmet_prereq_count": unmet_count,
             "eligible_now": unmet_count == 0,
         }
 
-    levels = _compute_upper_levels(upper_remaining, edges)
-    max_level = max((levels.get(course, 0) for course in upper_remaining), default=0)
+    levels = _compute_subset_levels(target_remaining, edges)
+    max_level = max((levels.get(course, 0) for course in target_remaining), default=0)
 
     tiers: list[list[str]] = []
     for level in range(max_level + 1):
         tier_nodes = sorted(
-            [course for course in upper_remaining if levels.get(course, 0) == level],
+            [course for course in target_remaining if levels.get(course, 0) == level],
             key=_course_sort_key,
         )
         if tier_nodes:
             tiers.append(tier_nodes)
 
     nodes = []
-    for course in sorted(upper_remaining, key=lambda c: (levels.get(c, 0), _course_sort_key(c))):
+    for course in sorted(target_remaining, key=lambda c: (levels.get(c, 0), _course_sort_key(c))):
         meta = node_meta.get(course, {})
         nodes.append(
             {
@@ -316,7 +331,7 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
                 "tier": levels.get(course, 0),
                 "eligible_now": bool(meta.get("eligible_now")),
                 "unmet_prereq_count": int(meta.get("unmet_prereq_count", 0)),
-                "remaining_upper_prereqs": meta.get("remaining_upper_prereqs", []),
+                "remaining_prereqs": meta.get("remaining_prereqs", []),
             }
         )
 
@@ -335,7 +350,8 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
         "edges": edge_list,
         "tiers": tiers,
         "summary": {
-            "remaining_upper_division_courses": len(upper_remaining),
+            "remaining_cmpsc_0_199_courses": len(target_remaining),
+            "remaining_upper_division_courses": len(target_remaining),
             "eligible_now": eligible_now_count,
         },
     }

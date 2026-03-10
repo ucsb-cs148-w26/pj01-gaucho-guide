@@ -76,15 +76,16 @@ async def generate_flowchart_from_transcript(file: UploadFile = File(...)):
         parsed = parse_transcript(pdf_bytes)
         completed_courses = extract_completed_courses_from_transcript(parsed)
         upper_division_plan = build_upper_division_flowchart_data(completed_courses)
-        remaining_upper = upper_division_plan.get("summary", {}).get(
-            "remaining_upper_division_courses", 0
-        )
+        summary = upper_division_plan.get("summary", {})
+        remaining_upper = summary.get("remaining_cmpsc_0_199_courses")
+        if remaining_upper is None:
+            remaining_upper = summary.get("remaining_upper_division_courses", 0)
         eligible_now = upper_division_plan.get("summary", {}).get("eligible_now", 0)
         if remaining_upper == 0:
-            message = "No remaining upper-division CMPSC courses were found."
+            message = "No remaining CMPSC courses in the 0-199 range were found."
         else:
             message = (
-                f"Upper-division plan generated. {eligible_now} course(s) are currently available."
+                f"CMPSC 0-199 plan generated. {eligible_now} course(s) are currently available."
             )
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to generate flowchart: {str(e)}")

@@ -154,12 +154,27 @@ function FlowchartPage({ apiUrl, getIdToken }) {
   const summary = planData?.summary && typeof planData.summary === "object" ? planData.summary : {};
   const graphMinWidth = Math.max(760, tiers.length * 250);
 
+  const getNodeStatusText = (node) => {
+    if (!node) return "";
+    if (node.eligible_now) return "Can take now";
+    const prereqs = Array.isArray(node.remaining_prereqs) ? node.remaining_prereqs : [];
+    if (node.unmet_prereq_count === 1 && prereqs.length > 0) {
+      return `1 prerequisite left: ${prereqs[0]}`;
+    }
+    if (prereqs.length > 0) {
+      const preview = prereqs.slice(0, 2).join(", ");
+      const more = prereqs.length > 2 ? ` (+${prereqs.length - 2} more)` : "";
+      return `${prereqs.length} prerequisite(s) left: ${preview}${more}`;
+    }
+    return `${node.unmet_prereq_count || 0} prerequisite(s) left`;
+  };
+
   return (
     <div className="flowchart-page">
       <div className="flowchart-shell">
         <h2 className="flowchart-title">Flowchart Planner</h2>
         <p className="flowchart-subtitle">
-          Upload your transcript PDF to generate a clean upper-division (1xx) CMPSC planner.
+          Upload your transcript PDF to generate a clean CMPSC 0-199 course planner.
         </p>
 
         <div className="flowchart-actions">
@@ -198,8 +213,10 @@ function FlowchartPage({ apiUrl, getIdToken }) {
           <div className="flowchart-plan">
             <div className="flowchart-plan-summary">
               <p>
-                Remaining upper-division courses:{" "}
-                {typeof summary.remaining_upper_division_courses === "number"
+                Remaining CMPSC (0-199) courses:{" "}
+                {typeof summary.remaining_cmpsc_0_199_courses === "number"
+                  ? summary.remaining_cmpsc_0_199_courses
+                  : typeof summary.remaining_upper_division_courses === "number"
                   ? summary.remaining_upper_division_courses
                   : planData.nodes.length}
               </p>
@@ -259,13 +276,14 @@ function FlowchartPage({ apiUrl, getIdToken }) {
                               className={`upper-node ${node.eligible_now ? "ready" : "locked"}`}
                               ref={setNodeRef(courseId)}
                               data-node-id={courseId}
+                              title={
+                                Array.isArray(node.remaining_prereqs) && node.remaining_prereqs.length > 0
+                                  ? `Remaining prerequisites: ${node.remaining_prereqs.join(", ")}`
+                                  : "No remaining prerequisites"
+                              }
                             >
                               <p className="upper-node-code">{node.label}</p>
-                              <p className="upper-node-meta">
-                                {node.eligible_now
-                                  ? "Can take now"
-                                  : `${node.unmet_prereq_count || 0} prerequisite(s) left`}
-                              </p>
+                              <p className="upper-node-meta">{getNodeStatusText(node)}</p>
                             </article>
                           );
                         })}
