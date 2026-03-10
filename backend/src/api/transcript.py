@@ -1,5 +1,3 @@
-import os
-
 from dotenv import load_dotenv
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -7,8 +5,8 @@ from pydantic import BaseModel, Field
 from src.managers.session_manager import SessionManager
 from src.scrapers.transcript_scraper import parse_transcript
 from src.services.prereq_graph import (
+    build_upper_division_flowchart_data,
     extract_completed_courses_from_transcript,
-    generate_remaining_path_image,
 )
 
 router = APIRouter(prefix="/transcript", tags=["transcript"])
@@ -29,6 +27,7 @@ class FlowchartResponse(BaseModel):
     message: str
     image_url: str | None = None
     completed_courses: list[str] = Field(default_factory=list)
+    upper_division_plan: dict | None = None
 
 
 @router.post("/parse", response_model=TranscriptResponse)
@@ -76,12 +75,23 @@ async def generate_flowchart_from_transcript(file: UploadFile = File(...)):
     try:
         parsed = parse_transcript(pdf_bytes)
         completed_courses = extract_completed_courses_from_transcript(parsed)
-        image_url, message = generate_remaining_path_image(completed_courses)
+        upper_division_plan = build_upper_division_flowchart_data(completed_courses)
+        remaining_upper = upper_division_plan.get("summary", {}).get(
+            "remaining_upper_division_courses", 0
+        )
+        eligible_now = upper_division_plan.get("summary", {}).get("eligible_now", 0)
+        if remaining_upper == 0:
+            message = "No remaining upper-division CMPSC courses were found."
+        else:
+            message = (
+                f"Upper-division plan generated. {eligible_now} course(s) are currently available."
+            )
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to generate flowchart: {str(e)}")
 
     return FlowchartResponse(
         message=message,
-        image_url=image_url,
+        image_url=None,
         completed_courses=completed_courses,
+        upper_division_plan=upper_division_plan,
     )
