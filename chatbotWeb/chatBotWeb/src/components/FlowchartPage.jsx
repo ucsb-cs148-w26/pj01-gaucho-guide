@@ -151,11 +151,21 @@ function FlowchartPage({ apiUrl, getIdToken }) {
   };
 
   const tiers = Array.isArray(planData?.tiers) ? planData.tiers : [];
+  const takenCourses = Array.isArray(planData?.taken_courses) ? planData.taken_courses : [];
   const summary = planData?.summary && typeof planData.summary === "object" ? planData.summary : {};
-  const graphMinWidth = Math.max(760, tiers.length * 250);
+  const columns = [
+    ...(takenCourses.length > 0 ? [{ key: "taken", title: "Have Taken", courses: takenCourses }] : []),
+    ...tiers.map((tierCourses, tierIndex) => ({
+      key: `tier-${tierIndex + 1}`,
+      title: `Tier ${tierIndex + 1}`,
+      courses: tierCourses,
+    })),
+  ];
+  const graphMinWidth = Math.max(760, columns.length * 250);
 
   const getNodeStatusText = (node) => {
     if (!node) return "";
+    if (node.taken) return "HAVE TAKEN";
     if (node.eligible_now) return "Can take now";
     const prereqs = Array.isArray(node.remaining_prereqs) ? node.remaining_prereqs : [];
     if (node.unmet_prereq_count === 1 && prereqs.length > 0) {
@@ -221,6 +231,12 @@ function FlowchartPage({ apiUrl, getIdToken }) {
                   : planData.nodes.length}
               </p>
               <p>
+                Have taken (from transcript):{" "}
+                {typeof summary.taken_cmpsc_0_199_courses === "number"
+                  ? summary.taken_cmpsc_0_199_courses
+                  : takenCourses.length}
+              </p>
+              <p>
                 Eligible now:{" "}
                 {typeof summary.eligible_now === "number"
                   ? summary.eligible_now
@@ -260,24 +276,26 @@ function FlowchartPage({ apiUrl, getIdToken }) {
                 <div
                   className="upper-flowchart-grid"
                   style={{
-                    gridTemplateColumns: `repeat(${Math.max(tiers.length, 1)}, minmax(220px, 1fr))`,
+                    gridTemplateColumns: `repeat(${Math.max(columns.length, 1)}, minmax(220px, 1fr))`,
                   }}
                 >
-                  {tiers.map((tierCourses, tierIndex) => (
-                    <section key={`tier-${tierIndex}`} className="upper-tier">
-                      <h3 className="upper-tier-title">Tier {tierIndex + 1}</h3>
+                  {columns.map((column) => (
+                    <section key={column.key} className="upper-tier">
+                      <h3 className="upper-tier-title">{column.title}</h3>
                       <div className="upper-tier-nodes">
-                        {tierCourses.map((courseId) => {
+                        {column.courses.map((courseId) => {
                           const node = nodeById.get(courseId);
                           if (!node) return null;
                           return (
                             <article
                               key={courseId}
-                              className={`upper-node ${node.eligible_now ? "ready" : "locked"}`}
+                              className={`upper-node ${node.taken ? "taken" : node.eligible_now ? "ready" : "locked"}`}
                               ref={setNodeRef(courseId)}
                               data-node-id={courseId}
                               title={
-                                Array.isArray(node.remaining_prereqs) && node.remaining_prereqs.length > 0
+                                node.taken
+                                  ? "Completed in your transcript"
+                                  : Array.isArray(node.remaining_prereqs) && node.remaining_prereqs.length > 0
                                   ? `Remaining prerequisites: ${node.remaining_prereqs.join(", ")}`
                                   : "No remaining prerequisites"
                               }

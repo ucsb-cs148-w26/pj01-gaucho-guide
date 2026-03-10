@@ -1027,6 +1027,11 @@ body {
   background: #ecfdf3;
 }
 
+.upper-node.taken {
+  border-color: rgba(20, 80, 141, 0.58);
+  background: #e8f1ff;
+}
+
 .upper-node.locked {
   border-color: rgba(20, 80, 141, 0.36);
   background: #f8fbff;
@@ -1053,6 +1058,11 @@ body {
 [data-theme="dark"] .upper-node.ready {
   border-color: #34d399;
   background: rgba(16, 69, 49, 0.55);
+}
+
+[data-theme="dark"] .upper-node.taken {
+  border-color: rgba(147, 197, 253, 0.75);
+  background: rgba(15, 52, 102, 0.56);
 }
 
 [data-theme="dark"] .upper-node.locked {

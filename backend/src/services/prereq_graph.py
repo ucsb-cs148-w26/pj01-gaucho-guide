@@ -266,17 +266,21 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
         [course for course in known_courses if _is_cmpsc_0_to_199(course)],
         key=_course_sort_key,
     )
+    target_taken = [course for course in target_courses if course in completed]
     target_remaining = [course for course in target_courses if course not in completed]
+    target_taken_set = set(target_taken)
     target_remaining_set = set(target_remaining)
 
-    if not target_remaining:
+    if not target_courses:
         return {
             "nodes": [],
             "edges": [],
             "tiers": [],
+            "taken_courses": [],
             "summary": {
                 "remaining_cmpsc_0_199_courses": 0,
                 "remaining_upper_division_courses": 0,
+                "taken_cmpsc_0_199_courses": 0,
                 "eligible_now": 0,
             },
         }
@@ -294,6 +298,10 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
                 continue
 
             resolved_norm = normalize_course_code(resolved)
+            if is_internal and resolved_norm in target_taken_set:
+                edges.add((resolved_norm, course))
+                continue
+
             if resolved_norm in completed:
                 continue
 
@@ -309,11 +317,11 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
             "eligible_now": unmet_count == 0,
         }
 
-    levels = _compute_subset_levels(target_remaining, edges)
-    max_level = max((levels.get(course, 0) for course in target_remaining), default=0)
+    levels = _compute_subset_levels(target_remaining, edges) if target_remaining else {}
+    max_level = max((levels.get(course, 0) for course in target_remaining), default=-1)
 
     tiers: list[list[str]] = []
-    for level in range(max_level + 1):
+    for level in range(max_level + 1 if max_level >= 0 else 0):
         tier_nodes = sorted(
             [course for course in target_remaining if levels.get(course, 0) == level],
             key=_course_sort_key,
@@ -322,6 +330,19 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
             tiers.append(tier_nodes)
 
     nodes = []
+    for course in target_taken:
+        nodes.append(
+            {
+                "id": course,
+                "label": course,
+                "tier": -1,
+                "taken": True,
+                "eligible_now": False,
+                "unmet_prereq_count": 0,
+                "remaining_prereqs": [],
+            }
+        )
+
     for course in sorted(target_remaining, key=lambda c: (levels.get(c, 0), _course_sort_key(c))):
         meta = node_meta.get(course, {})
         nodes.append(
@@ -329,6 +350,7 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
                 "id": course,
                 "label": course,
                 "tier": levels.get(course, 0),
+                "taken": False,
                 "eligible_now": bool(meta.get("eligible_now")),
                 "unmet_prereq_count": int(meta.get("unmet_prereq_count", 0)),
                 "remaining_prereqs": meta.get("remaining_prereqs", []),
@@ -349,9 +371,11 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
         "nodes": nodes,
         "edges": edge_list,
         "tiers": tiers,
+        "taken_courses": target_taken,
         "summary": {
             "remaining_cmpsc_0_199_courses": len(target_remaining),
             "remaining_upper_division_courses": len(target_remaining),
+            "taken_cmpsc_0_199_courses": len(target_taken),
             "eligible_now": eligible_now_count,
         },
     }
