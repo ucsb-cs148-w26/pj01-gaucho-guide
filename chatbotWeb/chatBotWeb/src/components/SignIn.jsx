@@ -3,30 +3,20 @@ import { useAuth } from "../contexts/AuthContext";
 import "./SignIn.css";
 
 const SignIn = () => {
-  const { signInWithEmail, signUpWithEmail, authEnabled } = useAuth();
-
-  const [mode, setMode] = useState("signin");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { signInWithGoogle, authEnabled } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async () => {
     if (loading) return;
 
     setError("");
     setLoading(true);
 
     try {
-      if (mode === "signup") {
-        await signUpWithEmail(email, password, name);
-      } else {
-        await signInWithEmail(email, password);
-      }
+      await signInWithGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed.");
+      setError(err instanceof Error ? err.message : "Google sign-in failed.");
     } finally {
       setLoading(false);
     }
@@ -42,69 +32,29 @@ const SignIn = () => {
 
         <div className="signin-content">
           <div className="signin-message">
-            <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-            <p>Use your UCSB email to access chat and history.</p>
+            <h2>Welcome</h2>
+            <p>Sign in using your UCSB Google account.</p>
           </div>
 
           {!authEnabled && (
             <div className="signin-error">
-              Firebase auth is not configured. Add `VITE_FIREBASE_*` vars.
+              Firebase auth is not configured.
             </div>
           )}
 
-          <form className="signin-form" onSubmit={onSubmit}>
-            {mode === "signup" && (
-              <input
-                className="signin-input"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
-              />
-            )}
-
-            <input
-              className="signin-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@ucsb.edu"
-              required
-            />
-
-            <input
-              className="signin-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              minLength={6}
-              required
-            />
-
-            {error && <div className="signin-error">{error}</div>}
-
-            <button className="signin-btn" type="submit" disabled={loading || !authEnabled}>
-              {loading ? "Please wait..." : mode === "signup" ? "Create Account" : "Sign In"}
-            </button>
-          </form>
+          {error && <div className="signin-error">{error}</div>}
 
           <button
-            className="signin-toggle"
-            type="button"
-            onClick={() => {
-              setError("");
-              setMode((m) => (m === "signup" ? "signin" : "signup"));
-            }}
+            className="signin-btn"
+            onClick={handleGoogleSignIn}
+            disabled={loading || !authEnabled}
           >
-            {mode === "signup"
-              ? "Already have an account? Sign in"
-              : "Need an account? Sign up"}
+            {loading ? "Signing in..." : "Sign in with Google"}
           </button>
 
           <div className="signin-notice">
             <p>
-              <strong>Restriction:</strong> only `@ucsb.edu` emails are allowed.
+              <strong>Restriction:</strong> only <code>@ucsb.edu</code> accounts allowed.
             </p>
           </div>
         </div>
