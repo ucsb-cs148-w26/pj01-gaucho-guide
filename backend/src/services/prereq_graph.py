@@ -75,6 +75,51 @@ def extract_completed_courses_from_transcript(transcript_data: dict) -> list[str
     return sorted(completed)
 
 
+def extract_taken_or_in_progress_courses_from_transcript(transcript_data: dict) -> list[str]:
+    """
+    Returns courses that should be treated as already accounted for in planning:
+    completed + in_progress + planned.
+    """
+    accounted: set[str] = set()
+
+    for row in transcript_data.get("courses", []):
+        if not isinstance(row, dict):
+            continue
+
+        raw_code = row.get("course_code")
+        if not isinstance(raw_code, str) or not raw_code.strip():
+            continue
+
+        status = row.get("status")
+        status_norm = status.strip().lower() if isinstance(status, str) else ""
+
+        if status_norm in {"completed", "in_progress", "planned"}:
+            accounted.add(normalize_course_code(raw_code))
+            continue
+
+        comp_units = row.get("comp_units")
+        try:
+            comp_units_f = float(comp_units) if comp_units is not None else None
+        except Exception:
+            comp_units_f = None
+
+        if comp_units_f is not None:
+            if comp_units_f > 0:
+                accounted.add(normalize_course_code(raw_code))
+                continue
+            if comp_units_f == 0:
+                att_units = row.get("att_units", row.get("units"))
+                try:
+                    att_units_f = float(att_units) if att_units is not None else None
+                except Exception:
+                    att_units_f = None
+                if att_units_f is not None and att_units_f > 0:
+                    accounted.add(normalize_course_code(raw_code))
+                    continue
+
+    return sorted(accounted)
+
+
 def _node_id(label: str) -> str:
     safe = re.sub(r"[^A-Za-z0-9_]+", "_", label.strip())
     safe = safe.strip("_")
@@ -242,7 +287,10 @@ def generate_remaining_path_image(
     return mermaid_image_url(markup), "Flowchart generated successfully."
 
 
-def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None = None) -> dict:
+def build_upper_division_flowchart_data(
+    completed_courses: Iterable[str] | None = None,
+    accounted_courses: Iterable[str] | None = None,
+) -> dict:
     """
     Returns frontend-friendly flowchart data for CMPSC courses in the 0-199 range.
     """
@@ -266,8 +314,15 @@ def build_upper_division_flowchart_data(completed_courses: Iterable[str] | None 
         [course for course in known_courses if _is_cmpsc_0_to_199(course)],
         key=_course_sort_key,
     )
-    target_taken = [course for course in target_courses if course in completed]
-    target_remaining = [course for course in target_courses if course not in completed]
+
+    accounted_set = {
+        normalize_course_code(code)
+        for code in (accounted_courses or completed)
+        if isinstance(code, str) and code.strip()
+    }
+
+    target_taken = [course for course in target_courses if course in accounted_set]
+    target_remaining = [course for course in target_courses if course not in accounted_set]
     target_taken_set = set(target_taken)
     target_remaining_set = set(target_remaining)
 

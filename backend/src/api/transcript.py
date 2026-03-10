@@ -7,6 +7,7 @@ from src.scrapers.transcript_scraper import parse_transcript
 from src.services.prereq_graph import (
     build_upper_division_flowchart_data,
     extract_completed_courses_from_transcript,
+    extract_taken_or_in_progress_courses_from_transcript,
 )
 
 router = APIRouter(prefix="/transcript", tags=["transcript"])
@@ -75,7 +76,11 @@ async def generate_flowchart_from_transcript(file: UploadFile = File(...)):
     try:
         parsed = parse_transcript(pdf_bytes)
         completed_courses = extract_completed_courses_from_transcript(parsed)
-        upper_division_plan = build_upper_division_flowchart_data(completed_courses)
+        accounted_courses = extract_taken_or_in_progress_courses_from_transcript(parsed)
+        upper_division_plan = build_upper_division_flowchart_data(
+            completed_courses=completed_courses,
+            accounted_courses=accounted_courses,
+        )
         summary = upper_division_plan.get("summary", {})
         remaining_upper = summary.get("remaining_cmpsc_0_199_courses")
         if remaining_upper is None:
