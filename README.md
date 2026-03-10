@@ -80,8 +80,129 @@ We used FastAPI in order to create the API for all of our calls. OpenAI will be 
 
 Gaucho Guider will be available on the public internet, so we plan to restrict access to UCSB students using OAuth-based authentication (for example, requiring an @ucsb.edu login) to reduce the risk of spam or inappropriate use. All authenticated users share the same role and permissions: they can ask the chatbot questions and use the browser extension to get course-planning help, with no separate administrator or moderator features. Users’ goals are to understand courses more clearly, compare class options, and plan schedules with confidence.
 
+<!-- New installation instructions go here -->
 
-# Installation
+# Installation / Run Procedure
+
+Gaucho Guider is a **web application**, so there is no distributable mobile or desktop binary.
+The easiest way to test the project is through the live deployment:
+
+https://gauchoguider.vercel.app
+
+If you want to run it locally instead, follow the steps below.
+
+---
+
+## Prerequisites
+
+| Tool | Version | Where to Get It |
+|------|---------|-----------------|
+| Python | 3.10+ | https://python.org/downloads |
+| Node.js | 18+ | https://nodejs.org |
+| Git | Any recent | https://git-scm.com |
+| Chrome (for extension) | Any recent | https://google.com/chrome |
+
+---
+
+## Environment Variables
+
+The backend reads credentials from a `.env` file inside the `backend/` directory.
+
+| Variable | Example | Where to Get It |
+|----------|---------|-----------------|
+| GEMINI_API_KEY | AIza... | https://aistudio.google.com |
+| PINECONE_API_KEY | pcsk_... | https://app.pinecone.io |
+| PINECONE_INDEX | gaucho-index | Pinecone console |
+| FIREBASE_CREDENTIALS | ./firebase.json | Firebase console > Project Settings > Service Accounts |
+
+The team can provide a pre-filled `.env` file during lab if needed.
+
+---
+
+## 1. Clone the Repository
+```bash
+git clone https://github.com/ucsb-cs148-w25/pj-05-gauchoguider.git
+cd pj-05-gauchoguider
+```
+
+## 2. Run the Backend (FastAPI)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+API docs will be at http://localhost:8000/docs once it's running.
+
+## 3. Run the Frontend (React)
+```bash
+cd frontend
+npm install
+echo "VITE_API_BASE_URL=http://localhost:8000" > .env
+npm run dev
+```
+
+Open http://localhost:5173 in your browser.
+
+## 4. Load the Chrome Extension (GOLDLens)
+
+1. Open `chrome://extensions`
+2. Enable **Developer Mode** (toggle in the top-right corner)
+3. Click **Load unpacked**
+4. Select the `extension/` folder from the repository
+
+Then navigate to gold.ucsb.edu and hover over a course listing to see the overlay panel.
+
+> **Note:** The backend must be running for the extension to pull data.
+
+---
+
+## Optional: Re-run the Data Scrapers
+
+The Pinecone index is already populated, so you don't need to do this for review. If you want to rebuild it, run the individual scrapers from the backend:
+```bash
+cd backend
+python src/scrapers/reddit_scraper.py
+python src/scrapers/rmp_scraper.py
+python src/scrapers/ucsbcatalog_scraper.py
+```
+
+Note: `transcript_scraper.py` is used at query time as part of the Gemini hybrid flow, not as a standalone ingestion step.
+
+
+## Running Tests
+
+Tests are located in the `tests/` directory. Make sure you're in the `backend/` folder with the virtual environment active before running them.
+```bash
+cd backend
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
+pytest tests/
+```
+
+The test suite covers:
+
+- **Chat API** (`test_chat.py`) — unit tests for chat endpoints
+- **Managers** (`test_managers.py`) — concurrency handlers for the API
+- **RAG pipeline** (`test_rag.py`) — retrieval and response generation
+- **Transcript processing** (`test_transcript.py`, `test_transcript_scraper_unit.py`, `test_transcript_advisor_unit.py`) — transcript parsing and the Gemini hybrid advising flow
+- **UCSB catalog scraper** (`test_ucsbcatalog_scraper.py`) — catalog data ingestion
+
+  
+---
+
+<details>
+<summary><h2><strong>Archived Installation Instructions + Known Problems (Week 5 Version)</strong></h2></summary>
+<br>
+  
+These instructions reflect the earlier Week 5 setup of the project and are kept here for reference.  
+
+They are no longer the recommended way to run GauchoGuider.
+
+# Installation 
 
 ## Prerequisites
 
@@ -165,6 +286,17 @@ Open the app in your browser at:
 http://localhost:5173
 ```
 
+### Known Problems
+
+- Only the RateMyProfessors scraper is fully implemented. Reddit and UCSB catalog scrapers are still in development.
+- Some questions may return limited or missing answers due to the current data coverage.
+- In some cases, the system will explicitly tell the user that it does not have enough information to answer a question.
+- The model does not always correctly identify whether a question is about a course, a professor, or general campus life, which can affect response quality.
+- The assistant currently uses a very casual tone. We plan to fine-tune this so it sounds more balanced—friendly and conversational, but not overly informal.
+</details>
+
+---
+
 ### Functionality:
 
 GauchoGuider helps UCSB students make course-planning decisions by letting them ask questions in plain English.
@@ -176,14 +308,6 @@ Typical use cases include:
 - Asking campus-related questions tied to UCSB student life
 
 The app combines scraped data with AI-generated responses to give quick, easy-to-understand guidance for scheduling and planning.
-
-### Known Problems
-
-- Only the RateMyProfessors scraper is fully implemented. Reddit and UCSB catalog scrapers are still in development.
-- Some questions may return limited or missing answers due to the current data coverage.
-- In some cases, the system will explicitly tell the user that it does not have enough information to answer a question.
-- The model does not always correctly identify whether a question is about a course, a professor, or general campus life, which can affect response quality.
-- The assistant currently uses a very casual tone. We plan to fine-tune this so it sounds more balanced—friendly and conversational, but not overly informal.
 
 
 ### Contributing
