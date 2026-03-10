@@ -1,6 +1,9 @@
 import asyncio
+import base64
 import os
 import json
+import random
+from collections import defaultdict
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Request, HTTPException
@@ -18,8 +21,9 @@ from src.scrapers.reddit_scraper import extract_course_codes
 from src.auth.firebase_token import verify_firebase_id_token, firebase_admin_ready
 from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
-from src.services.prereq_graph import generate_remaining_path_image
 from src.services.transcript_advisor import build_transcript_advising_context
+
+from backend.src.services.prereq_graph import normalize_course_code, _clean_prereq_label
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
@@ -44,27 +48,74 @@ class GroundedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
 
 
 @tool
-def generate_course_prereqs_graph(completed_courses: Optional[List[str]] = None) -> str:
+def generate_future_route_graph(current_courses: List[str]) -> str:
     """
-    Generates a visual graph of the Computer Science course prerequisites.
+    Generates a visual graph of possible future course routes based on a list of current CMPSC courses.
 
     Args:
-        completed_courses: A list of course codes the student has already finished,
-                           extracted from their transcript or chat history.
-                           Example: ["CMPSC 8", "CMPSC 16", "MATH 3A"]
+        current_courses: A list of current course codes (e.g., ["CMPSC 8", "MATH 3A", "PSTAT 120A"]).
     """
-
     try:
-        image_url, message = generate_remaining_path_image(completed_courses)
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
     except FileNotFoundError:
         return "Error: Prerequisite data file is missing on the server."
-    except Exception:
-        return "Error: Failed to generate the prerequisite graph."
 
-    if not image_url:
-        return message
+    postreqs = defaultdict(list)
+    for course, details in data.items():
+        course_norm = normalize_course_code(course)
 
-    return f"Here is the remaining prerequisite path based on your completed courses:\n\n![CMPSC Prerequisites Graph]({image_url})"
+        if not course_norm.startswith("CMPSC"):
+            continue
+
+        for prereq in details.get("prereq_courses", []):
+            if not isinstance(prereq, str):
+                continue
+            clean_prereq = normalize_course_code(_clean_prereq_label(prereq))
+
+            if clean_prereq.startswith("CMPSC"):
+                postreqs[clean_prereq].append(course_norm)
+
+    valid_courses = [
+        normalize_course_code(c) for c in current_courses
+        if normalize_course_code(c).startswith("CMPSC")
+    ]
+
+    if not valid_courses:
+        return "No valid CMPSC courses were found in your current list to generate a future route."
+
+    generated_urls = []
+
+    for start_course in valid_courses:
+        edges = set()
+        queue = [(start_course, 0)]
+        visited = {start_course: 0}
+
+        while queue:
+            current, depth = queue.pop(0)
+
+            if depth < 4:
+                for nxt in postreqs.get(current, []):
+                    edges.add((current, nxt))
+                    if nxt not in visited or visited[nxt] > depth + 1:
+                        visited[nxt] = depth + 1
+                        queue.append((nxt, depth + 1))
+
+        mermaid_markup = ["graph TD"]
+
+        for src, dst in edges:
+            mermaid_markup.append(f'    {_node_id(src)}["{src}"] --> {_node_id(dst)}["{dst}"]')
+
+        if not edges:
+            mermaid_markup.append(f'    {_node_id(start_course)}["{start_course}"]')
+
+        markup_str = "\n".join(mermaid_markup)
+        encoded = base64.urlsafe_b64encode(markup_str.encode("utf-8")).decode("ascii")
+        generated_urls.append(f"https://mermaid.ink/img/{encoded}")
+
+    selected_url = random.choice(generated_urls)
+
+    return f"Here is a possible future route you could take based on your current coursework:\n\n![Future Route Graph]({selected_url})"
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -227,7 +278,7 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
             temperature=0,
         )
 
-        tools = [generate_course_prereqs_graph]
+        tools = [generate_future_route_graph]
 
         agent_executor = create_agent(base_llm, tools)
 
@@ -322,6 +373,7 @@ async def get_chat_response(request: ChatRequestDTO, http_request: Request):
         9. COURSE GRAPHS: If the user asks for a visual diagram or graph of course prerequisites, check if their transcript is available (either provided below or in previous chat history). 
            - IF YES: Call the generate_course_prereqs_graph tool and pass their completed courses into the tool so it removes them from the visual path.
            - IF NO: Do not call the tool. Politely ask them to upload their transcript or list their completed courses first so you can generate an accurate map.
+        10. Absolutely DO NOT IN ANY CIRCUMSTANCE explicitly say the information is from the context.
         """.strip())
 
         rag_prompt = f"""
