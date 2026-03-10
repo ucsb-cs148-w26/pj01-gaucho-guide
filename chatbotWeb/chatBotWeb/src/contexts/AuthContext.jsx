@@ -7,6 +7,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth, hasConfig } from "../lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -78,6 +79,27 @@ export const AuthProvider = ({ children }) => {
     return cred.user;
   };
 
+  const signInWithGoogle = async () => {
+  if (!auth) throw new Error("Firebase is not configured.");
+
+  const provider = new GoogleAuthProvider();
+
+  provider.setCustomParameters({
+    hd: "ucsb.edu"
+  });
+
+  const result = await signInWithPopup(auth, provider);
+
+  const email = result.user.email || "";
+
+  if (!email.endsWith("@ucsb.edu")) {
+    await firebaseSignOut(auth);
+    throw new Error("Only @ucsb.edu accounts allowed.");
+  }
+
+  return result.user;
+};
+
   const signOut = async () => {
     if (!auth) return;
     await firebaseSignOut(auth);
@@ -95,8 +117,7 @@ export const AuthProvider = ({ children }) => {
     firebaseUser,
     loading,
     signOut,
-    signInWithEmail,
-    signUpWithEmail,
+    signInWithGoogle,
     getIdToken,
     isAuthenticated: !!user,
     authEnabled: hasConfig,
