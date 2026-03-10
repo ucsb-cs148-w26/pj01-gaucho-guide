@@ -23,7 +23,7 @@ from src.models.chat_request_dto import ChatRequestDTO
 from src.models.chat_response_dto import ChatResponseDTO
 from src.services.transcript_advisor import build_transcript_advising_context
 
-from backend.src.services.prereq_graph import normalize_course_code, _clean_prereq_label
+from src.services.prereq_graph import normalize_course_code, _clean_prereq_label
 
 router = APIRouter(prefix="/chat", tags=["chat", "Public"])
 
